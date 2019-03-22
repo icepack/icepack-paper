@@ -104,10 +104,10 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
 \section{Diagnostic models}
 
 There are two diagnostic models implemented in icepack.
-The shallow stream approximation (SSA) is a 2D model describing the depth-averaged velocity of a fast-flowing grounded ice stream or floating ice shelf \citep{macayeal1989large}.
+The \emph{shallow stream approximation} (SSA) is a 2D model describing the depth-averaged velocity of a fast-flowing grounded ice stream or floating ice shelf \citep{macayeal1989large}.
 The SSA model is appropriate where the sliding velocity is close to the surface velocity, or in other words where the ice is nearly in plug flow.
-Plug flow is a good approximation near the margins of an ice sheet, but deep in the interior the flow is mostly by vertical shear.
-The first-order or Blatter-Pattyn (BP) approximation, by contrast, is a 3D model describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
+Plug flow is a good approximation in fast-flowing ice streams and outlet glaciers near the margins of an ice sheet, but deep in the interior the flow is mostly by vertical shear.
+The \emph{first-order} or \emph{Blatter-Pattyn} (BP) approximation, by contrast, is a 3D model describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
 The only approximation in the BP model is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
 This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
 Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
@@ -126,7 +126,48 @@ Depending on one's viewpoint, it may also be a much deeper consequence of thermo
 
 \subsection{Implementation with firedrake}
 
-\subsection{Substitution of model components}
+\subsection{Substituting model components}
+
+Many aspects of glacier physics are not completely understood.
+For example, the most common description of basal friction assumes that glacier sliding occurs through regelation, in which case the basal shear stress can be written
+\begin{equation}
+    \tau_b = -C|u|^{\frac{1}{m} - 1}u
+\end{equation}
+with $m = 3$ \citep{weertman1957sliding}.
+Many authors have argued that, in fast-flowing regions of the ice sheet, glacier sliding occurs instead by plastic deformation within the subglacial sediments \citep{tulaczyk2000basal}.
+For plastic sliding, the shear stress is dependent on the yield strength of the subglacial sediments and not on the sliding speed, in which case $m = \infty$ would be most appropriate.
+Finally, the Schoof sliding law aims to reconcile the two modes of sliding \citep{schoof2005effect}.
+Below a critical sliding speed, the shear stress is aymptotic to $|u|^{1/m}$ as in the Weertman sliding law, but above the critical speed the shear stress is independent of the sliding speed.
+
+The Weertman and plastic sliding laws possess the same functional form but differ only in the value of a single scalar parameter $m$.
+The Schoof sliding law, on the other hand, has a totally different functional dependence on the velocity.
+Several authors, including Schoof, have proposed that the basal shear stress is also a function of the effective pressure $N = \rho gh - p_w$ within the subglacial hydrological system \citep{budd1979empirical, schoof2005effect}.
+Implementing these more sophisticated mathematical models would require adding an extra argument to the procedure for solving the diagnostic equation.
+
+One of our goals with icepack is to facilitate experimentation with the model physics.
+To support use cases like implementing the Schoof sliding law, it must be possible to completely alter the functional form of a given model physics component.
+For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
+In programming terms this amounts to changing the number of arguments to the function that calculates basal shear stress.
+For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
+In C++ one could obviate the need to modify the diagnostic solve routine by using variadic templates.
+But variadic templates are a more advanced language feature and using them would arguably present a steep learning curve for novices.
+
+In icepack, any given model physics component can be substituted for a parameterization of the user's choosing.
+Every flow model in icepack is represented by a Python object, and each model object is initialized with a set of functions to calculate the various terms of the action functional.
+For example, the ice stream model is initialized with functions to calculate the contributions due to viscosity, basal friction, side wall drag, and gravity.
+Sensible parameterizations are selected by default.
+If the user does wish to change a given component, they can pass a function that they write to the initializer for the model object.
+When the diagnostic solve procedure is invoked, all of its arguments are then passed on by keyword to the method that calculates the action functional.
+Any fields that are unnecessary for calculating a given component are simply ignored.
+For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function simply makes no use of these arguments.
+The functional form can be changed entirely and new arguments can be added, with the only restriction that they are passed as keyword and not as positional arguments.
+
+This approach to making the physics models more extensible restricts us to using keyword arguments instead of positional arguments.
+In this case, passing arguments by keyword enhances readability and comprehensibility.
+The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used for each ($C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.).
+The order of the arguments is arbitrary and immaterial.
+For defining, say, the bilinear form that represents a non-symmetric PDE, the order of the arguments does have some inherent mathematical significance.
+
 
 \subsection{Defining objective convergence criteria}
 
