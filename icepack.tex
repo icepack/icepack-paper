@@ -113,16 +113,23 @@ This approximation may be questionable around, say, the main trunk of Jakobshavn
 Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
 
 Both the SSA and BP models in icepack are described through \emph{action principles} \citep{dukowicz2010consistent}.
-Rather than describe the velocity as the weak solution of a nonlinear partial differential equation, an action principle instead states that the velocity is the minimizer of a certain nonlinear functional, the action.
-Most importantly for our application is that the action functional is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
-Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge.
-The two formulations are mathematically equivalent, but minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation.
+Rather than describe the velocity as the weak solution of a nonlinear PDE, an action principle instead states that the velocity minimizes a certain nonlinear functional, called the action.
+The action consists of four terms:
+\begin{align}
+    & \text{action} = \iint\text{stress} \times \text{strain rate}\ud z\ud x - \int\text{basal friction} \times \text{sliding velocity}\ud x \nonumber \\
+    & \quad - \iint\text{surface slope}\times\text{velocity}\ud z\ud x - \iint\text{ocean pressure}\times\text{velocity}\ud z\ud \gamma
+    \label{action-functional}
+\end{align}
+where $\ud z\ud x$ denotes integration over the entire glacier, $\ud x$ denotes integration over the glacier footprint, and $\ud z\ud\gamma$ over the side wall boundary.
+The action has units of power (energy/time) and can be related to the rate of decrease of the thermodynamic free energy.
+Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
+The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
 
-Many dissipative physical systems have convex action principles.
-In the theory of non-equilibrium thermodynamics, the existence of a convex action functional follows from the Onsager reciprocity relations \citep{de2013non}.
-The applicability of this theory, however, hinges on a number of assumptions that are hard to justify without question.
-In any case, the existence of an action functional is an immense mathematical convenience.
-Depending on one's viewpoint, it may also be a much deeper consequence of thermodynamics.
+Irrespective of any deep connections with thermodynamics, the existence of an action principle is a tremendous convenience for numerical analysis.
+For viscous flow problems near to steady-state, the action is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
+Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge from any initial guess.
+Minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation, although the two formulations are equivalent.
+
 
 \subsection{Implementation with firedrake}
 
@@ -169,7 +176,50 @@ The order of the arguments is arbitrary and immaterial.
 For defining, say, the bilinear form that represents a non-symmetric PDE, the order of the arguments does have some inherent mathematical significance.
 
 
-\subsection{Defining objective convergence criteria}
+\subsection{Convergence criteria}
+
+Calculating the ice velocity from the geometry and other input fields involves minimizing a convex functional.
+The minimizer can only be approximated, so we employ iterative procedures based on Newton's method with a line search.
+We must then choose some metric to decide when the current guess for the velocity is good enough to stop the iteration.
+
+A convergence criterion that works equally well independent of the mesh, finite element discretization, and the quality of the initial guess can be defined based on the idea of the \emph{Newton decrement} \citep{nocedal2006numerical}.
+The search direction $v_k$ at step $k$ for Newton's method is defined as
+\begin{equation}
+    v_k = -\ud^2J(u_k)^{-1}\ud J(u_k).
+\end{equation}
+Since the second derivative operator $\ud^2J(u_k)$ is positive-definite, this is a descent direction for the action $J$:
+\begin{equation}
+    \ud J(u_k)\cdot v_k < 0.
+\end{equation}
+The absolute value of the quantity in the last equation is defined as the Newton decrement.
+For $u_k$ sufficiently close to the true solution $u$, the Newton decrement roughly tells us how much we can expect the action to decrease:
+\begin{equation}
+    J(u_k) - J(u) \approx \frac{1}{2}|\ud J(u_k)\cdot v_k|.
+\end{equation}
+We can then use the Newton decrement to decide when to stop the iteration.
+
+As shown in equation \eqref{action-functional}, the action has units of power and is the sum of the dissipation due to viscosity, friction, gravitational driving, and restrain by ocean pressure at the terminus.
+The viscous and frictional terms are convex and positive functions of the velocity, while the gravitational and terminus stress terms are linear in the velocity and can be of either sign.
+If we define the \emph{scale functional}
+\begin{equation}
+    K(u) = \text{viscous dissipation} + \text{frictional dissipation}
+\end{equation}
+as only the positive parts of the action, then the convergence criterion
+\begin{equation}
+    |\ud J(u_k)\cdot v_k| < \epsilon K(u_k)
+\end{equation}
+is independent of the discretization.
+The intuition behind this criterion is that iteration is halted when the expected decrease in the action functional is much smaller than the positive part of the action itself.
+
+We have found empirically that, with this criterion and the Newton solver implementation in icepack, the iteration usually converges to machine precision in around 8 steps.
+For exceptionally bad initial guesses the iteration count can reach as high as 20 but rarely more.
+We also observe the expected doubling of the number of accurate digits in the value of the action once the velocity guesses are within the convergence basin of the true solution.
+Other convergence criteria, such as using relative change in the velocity guesses, can terminate prematurely when the initial guess is very far outside the quadratic convergence basin.
+
+The numerical solvers in icepack have been designed so that users who are not familiar with numerical optimization need not be confronted with a possibly bewildering array of algorithmic parameters.
+Consequently, sensible defaults have been chosen for the Armijo and Wolfe criteria \citep{nocedal2006numerical}, and the tolerance for the line search is chosen based on that of the outer-level Newton iteration.
+The Newton search direction is calculated using a direct factorization solver rather than, say, the conjugate gradient algorithm, as the use of another iterative method would introduce yet another algorithmic parameter.
+The existing algorithmic parameters can nonetheless be changed from their defaults by passing keyword arguments for advanced users who are interested in performance optimization.
 
 
 \section{Prognostic model}
