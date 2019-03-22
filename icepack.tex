@@ -1,0 +1,154 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+%\usepackage{amsfonts}
+\usepackage{amsthm}
+%\usepackage{amssymb}
+%\usepackage{mathrsfs}
+%\usepackage{fullpage}
+%\usepackage{mathptmx}
+%\usepackage[varg]{txfonts}
+\usepackage{natbib}
+\usepackage{color}
+\usepackage[charter]{mathdesign}
+\usepackage[pdftex]{graphicx}
+%\usepackage{float}
+%\usepackage{hyperref}
+%\usepackage[modulo, displaymath, mathlines]{lineno}
+%\usepackage{setspace}
+%\usepackage[titletoc,toc,title]{appendix}
+
+%\linenumbers
+%\doublespacing
+
+\theoremstyle{definition}
+\newtheorem*{defn}{Definition}
+\newtheorem*{exm}{Example}
+
+\theoremstyle{plain}
+\newtheorem*{thm}{Theorem}
+\newtheorem*{lem}{Lemma}
+\newtheorem*{prop}{Proposition}
+\newtheorem*{cor}{Corollary}
+
+\newcommand{\argmin}{\text{argmin}}
+\newcommand{\ud}{\hspace{2pt}\mathrm{d}}
+\newcommand{\bs}{\boldsymbol}
+\newcommand{\PP}{\mathsf{P}}
+
+\title{\emph{icepack}: a novel glacier flow modeling package}
+\author{Daniel Shapero}
+\date{}
+
+\begin{document}
+
+\tableofcontents
+\newpage
+
+\maketitle
+
+\begin{abstract}
+In this paper we introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
+Icepack is built on the finite element modeling library firedrake, which implements the domain-specific language UFL for the specification of weak forms of partial differential equations.
+The diagnostic models implemented in icepack use variational formulations that are specified in UFL.
+Individual components of each model's action functional can be easily substituted for components of the user's choosing, facilitating experimentation with the model physics.
+Additionally, many post-processing and analysis tasks on simulation results amount to the evaluation of some functional.
+By using a variational formulation of the model physics, the specification of a problem and the analysis of the solution employ the same conceptual vocabulary.
+A third advantage of variational principles is that the action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
+Icepack features a 3D diagnostic model based on terrain-following coordinates and vertical spectral discretization.
+This model resolves both plug- and shear-flow components of horizontal ice flow with a minimum of computational expense over 2D, depth-averaged models.
+Finally, icepack implements a Gauss-Newton solver for inverse problems that runs substantially faster than the standard BFGS method used in the glaciological literature.
+The overall design philosophy of icepack is to enable usability for as wide a swathe of the glaciological community as possible, including both experts and novices in numerical PDE solvers and high-performance computing.
+\end{abstract}
+
+\section{Introduction}
+
+Numerical modeling has become an essential part of the workflow of glaciologists across all disciplines.
+We highlight four main uses of glacier models in the literature:
+\begin{enumerate}
+    \item predicting future glacier extent and estimating the sea-level rise contribution from glacier dynamics,
+    \item exploring poorly-understood aspects of glacier physics, such as hydrology and calving,
+    \item estimating unobservable quantities, such as bed friction or rheology, from observational data, and
+    \item reconstructing what glaciers of the near- or distant-past may have looked like.
+\end{enumerate}
+Nearly all glaciologists, from graduate students to senior researchers, need to use numerical models at some point in their career.
+Several glacier flow models already exist and are effective in the hands of experts.
+These models are usually written in compiled programming languages such as C, C++, and Fortran, which afford an unsurpassed degree of computational speed.
+Many researchers in glaciology, however, receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
+The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for using numerical models to glaciologists who are not experts in modeling as such.
+We wanted to make a tool that would be accessible also to non-experts.
+
+\textcolor{red}{We focus in this paper only on novel aspects of icepack that differ substantially from existing packages.}
+
+The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
+VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}.
+The Firedrake project began as an outgrowth of FEniCS and both packages implement the same domain-specific language for specifying weak forms of PDE.
+Icepack improves upon the groundwork laid in VarGlaS through its use of tensor product finite elements on extruded meshes, both of which are only available in firedrake \citep{bercea2016structure, mcrae2016automated}.
+These two features enable the definition of a much simpler 3D flow model that we will describe in the next section.
+
+The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
+The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation.
+The inputs to the diagnostic equation are the ice thickness, surface elevation, rheology, ice velocity at the inflow boundary, and the coefficient of friction for contact with the bed and side walls.
+The output of the diagnostic equation is the ice velocity throughout the entire region of interest.
+The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
+The inputs to the prognostic equation are the current value of the ice thickness, the ice velocity, and the surface and basal mass balance.
+The output is the ice thickness at a later time.
+Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation.
+
+The rheology and friction coefficient may also be described in terms of other fields.
+For example, the rheology can be parameterized in terms of the ice temperature, englacial water content, and damage state.
+Likewise, the friction coefficient can be described in terms of a geological roughness factor and the subglacial water pressure.
+The diagnostic and prognostic equations can then be supplemented with evolution equations for these fields, for example the heat equation for temperature, or a hydrology model for subglacial water pressure.
+
+
+\section{Diagnostic models}
+
+There are two diagnostic models implemented in icepack.
+The shallow stream approximation (SSA) is a 2D model describing the depth-averaged velocity of a fast-flowing grounded ice stream or floating ice shelf \citep{macayeal1989large}.
+The SSA model is appropriate where the sliding velocity is close to the surface velocity, or in other words where the ice is nearly in plug flow.
+Plug flow is a good approximation near the margins of an ice sheet, but deep in the interior the flow is mostly by vertical shear.
+The first-order or Blatter-Pattyn (BP) approximation, by contrast, is a 3D model describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
+The only approximation in the BP model is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
+This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
+Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
+
+Both the SSA and BP models in icepack are described through \emph{action principles} \citep{dukowicz2010consistent}.
+Rather than describe the velocity as the weak solution of a nonlinear partial differential equation, an action principle instead states that the velocity is the minimizer of a certain nonlinear functional, the action.
+Most importantly for our application is that the action functional is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
+Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge.
+The two formulations are mathematically equivalent, but minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation.
+
+Many dissipative physical systems have convex action principles.
+In the theory of non-equilibrium thermodynamics, the existence of a convex action functional follows from the Onsager reciprocity relations \citep{de2013non}.
+The applicability of this theory, however, hinges on a number of assumptions that are hard to justify without question.
+In any case, the existence of an action functional is an immense mathematical convenience.
+Depending on one's viewpoint, it may also be a much deeper consequence of thermodynamics.
+
+\subsection{Implementation with firedrake}
+
+\subsection{Substitution of model components}
+
+\subsection{Defining objective convergence criteria}
+
+
+\section{Prognostic model}
+
+
+\section{Data assimilation}
+
+
+\section{Demonstrations}
+
+
+\section{Testing}
+
+
+\section{Usability}
+
+
+\section{Discussion}
+
+\bibliographystyle{plainnat}
+\bibliography{icepack.bib}
+
+\end{document}
