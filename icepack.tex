@@ -169,11 +169,21 @@ Any fields that are unnecessary for calculating a given component are simply ign
 For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function simply makes no use of these arguments.
 The functional form can be changed entirely and new arguments can be added, with the only restriction that they are passed as keyword and not as positional arguments.
 
-This approach to making the physics models more extensible restricts us to using keyword arguments instead of positional arguments.
-In this case, passing arguments by keyword enhances readability and comprehensibility.
-The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used for each ($C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.).
+We are restricted to using keyword arguments instead of positional arguments by adopting this approach.
+For the particular case of passing several fields to a physics solver routine, using only keyword arguments enhances readability and comprehensibility.
+The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used in the literature -- $C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.
 The order of the arguments is arbitrary and immaterial.
-For defining, say, the bilinear form that represents a non-symmetric PDE, the order of the arguments does have some inherent mathematical significance.
+For defining, say, the bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance and our design would be inappropriate.
+
+One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
+Since the physics of glacier flow are not understood completely, this focus on extensibility is essential for glaciological modeling \textcolor{red}{reword somehow}.
+Writing the entire package in Python was necessary to meet this goal.
+Many scientific software packages consist of a highly-optimized core library in C, C++, or Fortran, together with a wrapper that exposes this library to an interpreted language like Python.
+This approach in principle offers the best of both worlds -- the runtime efficiency of a compiled language with the convenience and interactivity of an interpreted one.
+Many practitioners, however, will use such a library entirely through the interpreted surface layer and have no familiarity with the language in which the fast core was written.
+These users then have a steep learning curve to overcome when they need to modify functionality that lives in the core library, as they now need to learn an entirely new programming language.
+Some low-level kernel code is always necessary for runtime efficiency of course.
+With Firedrake, this responsibility is deferred to a code generator of which the average user remains blissfully unaware.
 
 
 \subsection{Convergence criteria}
