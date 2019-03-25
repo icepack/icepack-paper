@@ -133,6 +133,141 @@ Minimizing a convex action functional is vastly more convenient numerically than
 
 \subsection{Implementation with firedrake}
 
+At the highest level, each physics model in icepack is represented by a Python class.
+So far, the models available are \texttt{IceShelf}, \texttt{IceStream}, and \texttt{HybridModel}.
+Each class has three main responsibilities.
+First, the model class has to have a method that takes in the various fields (ice velocity, thickness, surface elevation, etc.) and returns a symbolic representation of the action functional for that particular model.
+Second, the model class must have a method that takes in the input fields and returns an approximate minimizer of the action functional.
+The diagnostic solve method amounts to invoking an external Newton solve procedure on the symbolic action functional that the first method calculates.
+The Newton solver itself is completely standard but the convergence criterion is not and will be discussed in section \S\ref{sec:convergence-criteria}.
+Finally the model must have a method to update the ice thickness from the current value, the ice velocity, and the mass balance rates.
+The prognostic solver will be discussed in section \S\ref{sec:prognostic-model}.
+
+\textcolor{red}{Some sample code.}
+
+The Unified Form Language for specifying weak forms of PDEs contains all of the primitives necessary to express individual terms of the action functional.
+These primitives largely consist of the basic vector calculus operators like the gradient of a field, tensor calculus operations like taking the dot product of two vectors or tensors, scalar functions like the square root or exponential, and symbolic integration over the mesh or its boundary.
+For example, the strain rate for a given velocity field $u$ can be written as \texttt{sym(grad(u))}, where the function \texttt{grad} represents the symbolic gradient of a field and \texttt{sym} represents the symmetrization of a rank-2 tensor.
+
+\textcolor{red}{Brief discussion of SSA model.}
+
+The 3D flow model, as represented in the \texttt{HybridModel} class, uses several features that are only available in Firedrake to better exploit the underlying mathematics.
+First, rather than represent the 3D physical domain itself, we instead use \emph{terrain-following coordinates} and \emph{extruded meshes}.
+The terrain-following vertical coordinate $\zeta$ is defined as
+\begin{equation}
+    \zeta = \frac{z - b}{h}
+\end{equation}
+where $b$ is the ice base.
+We can then think of the computational domain as the Cartesian product of a 2D footprint domain $\Omega$ and the unit interval $[0, 1]$.
+
+Both the bed elevation and thickness depend on $x$ and $y$.
+As a result, the formula for the horizontal gradient of a field in terrain-following coordinates includes an additional geometric correction factor.
+Letting $\nabla_z$ and $\nabla_\zeta$ denote the horizontal gradient with respectively $z$ and $\zeta$ held constant, the chain rule gives us that
+\begin{equation}
+    \nabla_zq = \nabla_\zeta q + \frac{\partial q}{\partial\zeta}\nabla\zeta,
+\end{equation}
+where we can calculate the spatial gradient of $\zeta$ as
+\begin{equation}
+    \nabla\zeta = -h^{-1}\left\{(1 - \zeta)\nabla b + \zeta\nabla s\right\}.
+\end{equation}
+Likewise, the strain rate of a vector field can be expressed as
+\begin{equation}
+    \dot\varepsilon_z(u) = \dot\varepsilon_\zeta(u) + \frac{1}{2}\left(u \otimes\nabla\zeta + \nabla\zeta\otimes u\right)
+\end{equation}
+where $\otimes$ is the tensor product of two vectors.
+The geometric correction factor can easily be represented in UFL.
+By defining a wrapper around the UFL \texttt{grad} function, the code to define the action functional in terrain-following coordinates is no more complex than in Cartesian coordinates.
+
+Terrain-following coordinates are especially advantageous on extruded meshes.
+An extruded mesh takes a 2D footprint mesh and lifts it into 3D by taking the Cartesian product with the unit interval.
+The cells of an extruded mesh are triangular prisms instead of the more common tetrahedra used for general 3D meshes.
+In Firedrake, an extruded mesh is created by calling the function \texttt{ExtrudedMesh} on the 2D footprint.
+Not every 3D domain can be described by extruding a 2D domain, but the geometry of most glacier flow problems can.
+
+A 2D mesh can be extruded to any number of vertical layers.
+In Elmer/Ice, for example, the user chooses the number of vertical layers in order to set the resolution along this axis \citep{gagliardini2013capabilities}.
+The horizontal velocity is expected to be very smooth as a function of depth.
+For example, under the plug flow approximation, the horizontal velocity is constant with depth.
+Under the shallow ice approximation, the horizontal velocity varies with depth as $1 - (1 - \zeta)^{n + 1}$ where $n = 3$ is the Glen flow law exponent.
+This extra information about our solution suggests a different discretization strategy.
+
+Rather than extrude the footprint mesh into many vertical layers, we might instead use only one vertical layer and increase the polynomial degree in the vertical direction only to obtain higher resolution.
+To support this use case, Firedrake includes the ability to define \emph{tensor product} elements on extruded meshes.
+Given a set of finite element basis functions $\{\phi_k(x, y)\}$ defined on the 2D domain $\Omega$ and a set of basis functions $\{\psi_l(\zeta)\}$ defined on the unit interval $[0, 1]$, the tensor product finite element basis $\{\Phi_{kl}\}$ on the extruded domain is defined as
+\begin{equation}
+    \Phi_{kl}(x, y, \zeta) = \phi_k(x, y)\psi_l(\zeta).
+\end{equation}
+For example, we can use piecewise linear or quadratic elements on triangles and use quintic or higher degree polynomials in the vertical.
+Tensor product elements are defined in Firedrake by passing the extra keyword arguments \texttt{vfamily}, \texttt{vdegree} to the constructor for a function space.
+Rather than use the usual Lagrange interpolating polynomial basis in the vertical dimension, we can instead use the Legendre polynomial basis.
+The Legendre polynomials are mutually orthogonal and this choice makes the mass matrix block-diagonal.
+To select the Legendre polynomial basis, the user passes the keyword argument \texttt{vfamily=`Gauss-Legendre'} or \texttt{`GL'} for short to the constructor for the function space.
+
+The combination of using extruded meshes and tensor product elements in the vertical direction is referred to as \emph{semi-discretization}.
+This approach can be thought of merely as a way to discretize a PDE that has special structure.
+Alternatively, we can view vertical semi-discretization as defining a family of models indexed by the number of vertical basis functions.
+The order-$d$ model defines a coupled system of PDEs for $d$ vector fields.
+Each vector field represents one mode of vertical variability, similar to the distinction between barotropic and baroclinic modes in atmospheric physics and oceanography.
+The system is then discretized in the horizontal and solved numerically.
+In any case, the code is the same regardless of how one wishes to think about the underlying mathematics.
+
+We are then faced with the choice of how many vertical basis functions to use.
+Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
+The degree 1 model is the most minimalistic model that still exhibits vertical shear.
+Going to higher and higher degree gives a more accurate approximation at the expense of greater computational effort.
+
+This approach for implementing a 3D flow model works completely seamlessly but for one important detail.
+The backpressure from ocean water at the calving front of a marine-terminating glacier is not a smooth function of depth.
+The pressure is 0 above the water line and linearly increasing below it:
+\begin{equation}
+    \text{backpressure power} = \int_\Gamma\int_0^1 \rho_Wgh(\zeta_{\text{sl}} - \zeta)_+\ud\zeta\ud\gamma,
+    \label{backpressure}
+\end{equation}
+where $\zeta_{\text{sl}}$ denotes the relative depth to the water line and the subscript $+$ denotes the positive part of a real number.
+Were we to use the standard asssembly procedure in Firedrake to evaluate this integral, we would get an inaccurate result due to an insufficient number of integration points.
+The resulting velocity solutions are then wildly inaccurate due to the mis-specification of the Neumann boundary condition.
+A blunt solution to this problem would be to pass an extra argument to the Firedrake form compiler that specifies a much greater integration accuracy in the vertical for this term.
+This fix reduces, but does not eliminate, the errors in the velocities, and it incurs an appreciable computational cost.
+
+We instead implemented a routine that symbolically calculates the Legendre polynomial expansion of the function $(\zeta_{\text{sl}} - \zeta)_+$ with respect to the parameter $\zeta_{\text{sl}}$ using the package SymPy \citep{sympy}.
+The symbolic variables for $\zeta$ and $\zeta_{\text{sl}}$ used in the SymPy representation of the polynomial expansion are then substituted for equivalent symbolic variables in Firedrake/UFL using the SymPy object's \texttt{subs} method.
+Since the result of this symbolic Legendre polynomial expansion is the same upon every invocation, we can save the effort of recalculating it every time by caching the results.
+The Legendre polynomial approximation to this function only converges linearly as the number of coefficients is increased, since the the function is continuous but not smooth, and the approximation exhibits noticeable ringing artifacts \textcolor{red}{figure}.
+While the approximation itself is not very accurate, the calculated value of the integral in equation \eqref{backpressure} is exact because of the orthogonality property.
+Stated another way, the residuals in the approximation are large, but they integrate to 0 when multiplied by any Legendre polynomial up to the expansion limit.
+
+The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
+The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
+
+For the Stokes equations, transforming the vertical coordinate also circumvents the issue of how to enforce the partial Dirichlet boundary condition $u\cdot \nu = 0$ at the ice base, where $\nu$ is the unit outward normal vector.
+This boundary condition is difficult to impose exactly because the unit outward normal vector $\nu$ is defined on mesh faces while the velocity is defined at mesh vertices.
+Elmer/Ice uses an ad-hoc procedure to define the unit normal vectors at mesh nodes \citep{gagliardini2013capabilities}.
+With a transformation to terrain-following coordinates, we can just set the terrain-following vertical velocity $\omega$ to be 0 at the ice base to impose this boundary condition.
+
+We also argue that answers expressed in terrain-following coordinates are more intuitive in some respects than in Cartesian coordinates.
+At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates is
+\begin{equation}
+    w = -\dot a_b + u\cdot\nabla b.
+\end{equation}
+Knowing that a model gives a vertical velocity at the base of a glacier of, say, 10 cm/year, the modeler needs to also know the bed slope and sliding velocity.
+In other words it is not immediately clear whether the vertical velocity is more a result of basal mass balance or of geometry without more information.
+By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
+
+\textcolor{red}{Speed of hybrid model.}
+One of the main advantages of this hybrid model is the ease with which a more accurate solution can be bootstrapped from a less accurate solution, since the two fields are defined on exactly the same geometry.
+For example, if we only have a very crude initial guess for the solution, we can obtain a degree-1 solution relatively cheaply.
+The resulting velocity field is then used as a much more informed initial guess for a degree-5 solution.
+\textcolor{red}{Benchmark.}
+Since the vertical basis functions are orthogonal, the projection of the degree-1 solution into the degree-5 function space can be calculated by simply copying array elements.
+By contrast, if we tried to use the same strategy to bootstrap a solution with a small number of vertical layers to a solution with a larger number of vertical layers, we would also have to interpolate values to the fine layers.
+
+Finally, we note that this approach was first described in \citet{bassis2010hamilton}.
+This work focused solely on flowband models and did not consider the problem of how to calculate the power dissipated at the calving front.
+Moreover, this work used only the two vertical basis functions $\psi_1(\zeta) = 1$, $\psi_2(\zeta) = 1 - (1 - \zeta)^{n + 1}$, the idea being that the vertical profile can be written as a direct superposition of the plug flow and shallow ice approximation modes.
+By contrast, we leave the number of vertical basis functions up to the user.
+This flexibility enables the multigrid-type approach described above.
+
+
 \subsection{Substituting model components}
 
 Many aspects of glacier physics are not completely understood.
@@ -186,7 +321,7 @@ Some low-level kernel code is always necessary for runtime efficiency of course.
 With Firedrake, this responsibility is deferred to a code generator of which the average user remains blissfully unaware.
 
 
-\subsection{Convergence criteria}
+\subsection{Convergence criteria} \label{sec:convergence-criteria}
 
 Calculating the ice velocity from the geometry and other input fields involves minimizing a convex functional.
 The minimizer can only be approximated, so we employ iterative procedures based on Newton's method with a line search.
@@ -232,7 +367,7 @@ The Newton search direction is calculated using a direct factorization solver ra
 The existing algorithmic parameters can nonetheless be changed from their defaults by passing keyword arguments for advanced users who are interested in performance optimization.
 
 
-\section{Prognostic model}
+\section{Prognostic model} \label{sec:prognostic-model}
 
 The PDE describing how the ice thickness changes in time is a simple conservative advection equation:
 \begin{equation}
