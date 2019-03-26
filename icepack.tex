@@ -398,6 +398,47 @@ The implicit Euler scheme would obscure this feature and an alternative method s
 
 \section{Data assimilation}
 
+Icepack includes a set of routines for estimating the basal friction or rheology coefficients from observational data.
+The class \texttt{InverseProblem} represents the specification of the inverse problem.
+To specify an inverse problem, the user must provide:
+\begin{itemize}
+    \item the model object and the method that solves the diagnostic equation,
+    \item the objective and regularization functionals,
+    \item the observed field and the name of the argument to the diagnostic solver,
+    \item an initial guess for the field to be estimated and the name of the argument to the diagnostic solver,
+    \item extra data passed to the diagnostic solver such as boundary conditions.
+\end{itemize}
+At present, this class assumes that the observed state is always the ice velocity, but in principle the same design would suffice for more complicated inverse problems.
+More importantly, the inverse problem is flexible enough to account for the fact that we might have substituted in our own parameterization for the rheology or friction coefficient.
+For example, nearly all studies in the literature use an alternate parameterization of these coefficients in terms of some auxiliary field in order to guarantee positivity \textcolor{red}{citations}.
+This information is passed to the inverse problem by specifying the names of the keyword arguments for the observed state and the field we wish to observe.
+
+The class \texttt{InverseSolver} is an abstract interface for classes that actually solve the inverse problem.
+There are three implementations of this interface in icepack: \texttt{GradientDescentSolver}, \texttt{BFGSSolver}, and \texttt{GaussNewtonSolver}.
+All of these classes are based around the general idea of first computing a search direction and then performing a line search in every iteration.
+They differ in how the search direction is computed.
+The gradient descent solver uses the search direction
+\begin{equation}
+    \phi_k = -M^{-1}\ud J(\theta_k)
+\end{equation}
+where $M$ is the finite element mass matrix.
+Gradient descent is a popular choice because the objective functional is always decreasing along this search direction.
+However, the search direction can be poorly scaled to the physical dimensions of the problem at hand.
+This method can be very expensive and brittle in the initial iterations and often takes many steps to converge.
+The BFGS method uses the past $m$ iterations of the algorithm to compute a low-rank approximation to the inverse of the objective functional's Hessian matrix; see \citet{nocedal2006numerical} for a more in-depth discussion.
+The BFGS method converges faster than gradient descent but suffers from many of the same brittleness issues in the initial iterations before it has accumulated enough history.
+Finally, the Gauss-Newton solver defines an approximation to the ``first-order'' part of the objective functional Hessian.
+Each iteration of Gauss-Newton is more expensive than that of BFGS or gradient descent because it requires the solution of a more complex linear system than just the mass matrix.
+The Gauss-Newton method converges fastest by far in virtually every test case we have found, in some instances by up to factor of 50.
+
+The derivative of the objective functional with respect to the unknown parameter is calculated using the symbolic differentiation features of Firedrake.
+The user does not need to provide any routines for the derivatives, only the symbolic form of the error metric and the regularization functional.
+The model object is responsible for providing the symbolic form of the action functional.
+
+The bootstrapping approach used to calculate higher-order solutions to the hybrid model from lower-order solutions rather than from a cold initial guess can also be used for inverse problems.
+First, we estimate the unknown parameter using only degree-1 vertical basis functions for the velocity field, which captures most of the spatial variability of the unknown parameter.
+The resulting coefficient is then used as the initial guess with higher degree vertical basis functions for the velocity \textcolor{red}{benchmark}.
+
 
 \section{Demonstrations}
 
