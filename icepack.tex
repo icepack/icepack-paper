@@ -379,20 +379,20 @@ The ice thickness and bed elevation are used to update the surface elevation at 
 The need to calculate gradients of the surface elevation precludes the use of discontinuous Galerkin methods.
 
 The simplest explicit timestepping schemes are unstable with continuous Galerkin finite elements.
-Other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \textcolor{red}{cite ISSM, VarGlaS}.
-The SUPG method is explicit in time and conditionally stable \textcolor{red}{cite Donea and Huerta?}.
+Other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \citep{brinkerhoff2013data, larour2012continental}.
+The SUPG method with an explicit time discretization is conditionally stable \citep{donea2003finite}.
 This scheme introduces a tuneable stabilization parameter, so in the interest of simplicity we instead default to the implicit Euler scheme.
-The implicit Euler scheme requires solving a more complicated linear system, but the extra computational cost comes with the advantage of unconditional stability.
+The implicit Euler scheme requires solving a non-symmetric linear system, but the extra computational cost comes with the advantage of unconditional stability.
 Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy condition.
 The use of an unconditionally stable scheme guarantees that they will get an answer should they try to use a large timestep rather than a runtime error.
 The extra cost of using an implicit time discretization for the mass transport equation is dwarfed by the cost of the diagnostic solve in any case.
 Advanced users who are interested in maximizing performance can subclass the mass transport solver to implement a faster explicit scheme.
 
-The implicit Euler scheme introduces a large degree of artificial diffusion \textcolor{red}{cite Donea and Huerta}.
+The implicit Euler scheme tends to diffuse out sharp discontinuities that may be present in the true solution \citep{donea2003finite}.
 Since the ice thickness does not possess shockwaves or propagating discontinuities this error mode is tolerable.
 The coupling of ice thickness to velocity makes the whole system more resemble a parabolic problem than a hyperbolic one, and under the shallow ice approximation the system is truly parabolic.
 Other problems within glaciology have more of a hyperbolic character and there the argument for using shock-capturing methods is much stronger.
-For example, in continuum damage mechanics, the thresholding behavior of the source terms can induce sharp discontinuities in the damage field \textcolor{red}{cite Albrecht and Levermann}.
+For example, in continuum damage mechanics, the thresholding behavior of the source terms can induce sharp discontinuities in the damage field \citep{albrecht2014fracture}.
 The implicit Euler scheme would obscure this feature and an alternative method such as the strong stability-preserving Runge Kutta method would be more appropriate.
 
 
