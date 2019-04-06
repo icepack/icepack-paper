@@ -151,8 +151,10 @@ For example, the strain rate for a given velocity field $u$ can be written as \t
 
 \textcolor{red}{Brief discussion of SSA model.}
 
+\subsection{Terrain-following coordinates and extruded meshes}
+
 The 3D flow model, as represented in the \texttt{HybridModel} class, uses several features that are only available in Firedrake to better exploit the underlying mathematics.
-First, rather than represent the 3D physical domain itself, we instead use \emph{terrain-following coordinates} and \emph{extruded meshes}.
+Rather than represent the 3D physical domain itself, we instead use \emph{terrain-following coordinates} and \emph{extruded meshes}.
 The terrain-following vertical coordinate $\zeta$ is defined as
 \begin{equation}
     \zeta = \frac{z - b}{h}
@@ -184,14 +186,31 @@ The cells of an extruded mesh are triangular prisms instead of the more common t
 In Firedrake, an extruded mesh is created by calling the function \texttt{ExtrudedMesh} on the 2D footprint.
 Not every 3D domain can be described by extruding a 2D domain, but the geometry of most glacier flow problems can.
 
-A 2D mesh can be extruded to any number of vertical layers.
-In Elmer/Ice, for example, the user chooses the number of vertical layers in order to set the resolution along this axis \citep{gagliardini2013capabilities}.
+For the Stokes equations, this alternative coordinate system also helps avoid the problem of how to enforce the condition $u\cdot \nu = -\dot a_b$ at the ice base, where $\nu$ is the unit outward normal vector and $\dot a_b$ is the basal mass balance.
+This boundary condition is difficult to impose exactly because the unit outward normal vector $\nu$ is defined on mesh faces while the velocity is defined at mesh vertices.
+Elmer/Ice uses an ad-hoc procedure to define the unit normal vectors at mesh nodes \citep{gagliardini2013capabilities}.
+With a transformation to terrain-following coordinates, we can just set the terrain-following vertical velocity $\omega$ to be 0 at the ice base to impose this boundary condition.
+
+We also argue that answers expressed in terrain-following coordinates are more intuitive in some respects than in Cartesian coordinates.
+At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates is
+\begin{equation}
+    w = -\dot a_b + u\cdot\nabla b.
+\end{equation}
+Knowing that a model gives a vertical velocity at the base of a glacier of, say, 10 cm/year, the modeler needs to also know the bed slope and sliding velocity.
+In other words it is not immediately clear whether the vertical velocity is more a result of basal mass balance or of geometry without more information.
+By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
+
+
+\subsection{Vertical spectral elements}
+
+Having chosen to use an extruded mesh, we must then decide how many vertical layers to use.
+In Elmer/Ice, for example, the number of vertical layers is a user-tuneable parameter, depending on the desired resolution along this axis \citep{gagliardini2013capabilities}.
 The horizontal velocity is expected to be very smooth as a function of depth.
 For example, under the plug flow approximation, the horizontal velocity is constant with depth.
 Under the shallow ice approximation, the horizontal velocity varies with depth as $1 - (1 - \zeta)^{n + 1}$ where $n = 3$ is the Glen flow law exponent.
 This extra information about our solution suggests a different discretization strategy.
 
-Rather than extrude the footprint mesh into many vertical layers, we might instead use only one vertical layer and increase the polynomial degree in the vertical direction only to obtain higher resolution.
+Rather than extrude the footprint mesh into many vertical layers, we might instead use only one vertical layer and increase the polynomial degree in the vertical direction to obtain higher resolution.
 To support this use case, Firedrake includes the ability to define \emph{tensor product} elements on extruded meshes.
 Given a set of finite element basis functions $\{\phi_k(x, y)\}$ defined on the 2D domain $\Omega$ and a set of basis functions $\{\psi_l(\zeta)\}$ defined on the unit interval $[0, 1]$, the tensor product finite element basis $\{\Phi_{kl}\}$ on the extruded domain is defined as
 \begin{equation}
@@ -211,7 +230,7 @@ Each vector field represents one mode of vertical variability, similar to the di
 The system is then discretized in the horizontal and solved numerically.
 In any case, the code is the same regardless of how one wishes to think about the underlying mathematics.
 
-We are then faced with the choice of how many vertical basis functions to use.
+The user then has to decide how many vertical modes are enough.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
 The degree 1 model is the most minimalistic model that still exhibits vertical shear.
 Going to higher and higher degree gives a more accurate approximation at the expense of greater computational effort.
@@ -238,20 +257,6 @@ Stated another way, the residuals in the approximation are large, but they integ
 
 The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
 The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
-
-For the Stokes equations, transforming the vertical coordinate also circumvents the issue of how to enforce the partial Dirichlet boundary condition $u\cdot \nu = 0$ at the ice base, where $\nu$ is the unit outward normal vector.
-This boundary condition is difficult to impose exactly because the unit outward normal vector $\nu$ is defined on mesh faces while the velocity is defined at mesh vertices.
-Elmer/Ice uses an ad-hoc procedure to define the unit normal vectors at mesh nodes \citep{gagliardini2013capabilities}.
-With a transformation to terrain-following coordinates, we can just set the terrain-following vertical velocity $\omega$ to be 0 at the ice base to impose this boundary condition.
-
-We also argue that answers expressed in terrain-following coordinates are more intuitive in some respects than in Cartesian coordinates.
-At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates is
-\begin{equation}
-    w = -\dot a_b + u\cdot\nabla b.
-\end{equation}
-Knowing that a model gives a vertical velocity at the base of a glacier of, say, 10 cm/year, the modeler needs to also know the bed slope and sliding velocity.
-In other words it is not immediately clear whether the vertical velocity is more a result of basal mass balance or of geometry without more information.
-By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
 
 \textcolor{red}{Speed of hybrid model.}
 One of the main advantages of this hybrid model is the ease with which a more accurate solution can be bootstrapped from a less accurate solution, since the two fields are defined on exactly the same geometry.
@@ -292,7 +297,7 @@ For uses cases like explicitly adding the dependence of basal shear stress on hy
 In programming terms this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
 In C++ one could obviate the need to modify the diagnostic solve routine by using variadic templates.
-But variadic templates are a more advanced language feature and using them would arguably present a steep learning curve for novices.
+But variadic templates are a more advanced language feature and relying on them would arguably present a steep learning curve for novices.
 
 In icepack, any given model physics component can be substituted for a parameterization of the user's choosing.
 Every flow model in icepack is represented by a Python object, and each model object is initialized with a set of functions to calculate the various terms of the action functional.
@@ -304,7 +309,7 @@ Any fields that are unnecessary for calculating a given component are simply ign
 For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function simply makes no use of these arguments.
 The functional form can be changed entirely and new arguments can be added, with the only restriction that they are passed as keyword and not as positional arguments.
 
-We are restricted to using keyword arguments instead of positional arguments by adopting this approach.
+We are restricted to using keyword arguments instead of positional arguments in adopting this approach.
 For the particular case of passing several fields to a physics solver routine, using only keyword arguments enhances readability and comprehensibility.
 The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used in the literature -- $C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.
 The order of the arguments is arbitrary and immaterial.
@@ -354,7 +359,7 @@ as only the positive parts of the action, then the convergence criterion
     |\ud J(u_k)\cdot v_k| < \epsilon K(u_k)
 \end{equation}
 is independent of the discretization.
-The intuition behind this criterion is that iteration is halted when the expected decrease in the action functional is much smaller than the positive part of the action itself.
+The intuition behind this criterion is that the iteration is halted when the expected decrease in the action functional is much smaller than the positive part of the action itself.
 
 We have found empirically that, with this criterion and the Newton solver implementation in icepack, the iteration usually converges to machine precision in around 8 steps.
 For exceptionally bad initial guesses the iteration count can reach as high as 20 but rarely more.
@@ -364,7 +369,7 @@ Other convergence criteria, such as using relative change in the velocity guesse
 The numerical solvers in icepack have been designed so that users who are not familiar with numerical optimization need not be confronted with a possibly bewildering array of algorithmic parameters.
 Consequently, sensible defaults have been chosen for the Armijo and Wolfe criteria \citep{nocedal2006numerical}, and the tolerance for the line search is chosen based on that of the outer-level Newton iteration.
 The Newton search direction is calculated using a direct factorization solver rather than, say, the conjugate gradient algorithm, as the use of another iterative method would introduce yet another algorithmic parameter.
-The existing algorithmic parameters can nonetheless be changed from their defaults by passing keyword arguments for advanced users who are interested in performance optimization.
+Advanced users who are interested in performance optimization can change these algorithmic parameters by passing extra arguments to the solve procedure.
 
 
 \section{Prognostic model} \label{sec:prognostic-model}
@@ -382,7 +387,8 @@ The simplest explicit timestepping schemes are unstable with continuous Galerkin
 Other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \citep{brinkerhoff2013data, larour2012continental}.
 The SUPG method with an explicit time discretization is conditionally stable \citep{donea2003finite}.
 This scheme introduces a tuneable stabilization parameter, so in the interest of simplicity we instead default to the implicit Euler scheme.
-The implicit Euler scheme requires solving a non-symmetric linear system, but the extra computational cost comes with the advantage of unconditional stability.
+The implicit Euler scheme requires solving a non-symmetric linear system, but the computational cost comes with the advantage of unconditional stability.
+
 Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy condition.
 The use of an unconditionally stable scheme guarantees that they will get an answer should they try to use a large timestep rather than a runtime error.
 The extra cost of using an implicit time discretization for the mass transport equation is dwarfed by the cost of the diagnostic solve in any case.
