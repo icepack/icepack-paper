@@ -271,6 +271,9 @@ This work focused solely on flowband models and did not consider the problem of 
 Moreover, this work used only the two vertical basis functions $\psi_1(\zeta) = 1$, $\psi_2(\zeta) = 1 - (1 - \zeta)^{n + 1}$, the idea being that the vertical profile can be written as a direct superposition of the plug flow and shallow ice approximation modes.
 By contrast, we leave the number of vertical basis functions up to the user.
 This flexibility enables the multigrid-type approach described above.
+\citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
+\citet{jouvet2015multilayer} used vertical semi-discretization of the variational problem via finite differences in the vertical and finite elements in the horizontal, but did not use terrain-following coordinates.
+This work also adopts the viewpoint that semi-discretization defines a family of models, rather than merely a problem-specific discretization strategy.
 
 
 \subsection{Substituting model components}
