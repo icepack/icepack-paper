@@ -80,9 +80,13 @@ Our goal is to make a tool that will be both accessible to non-experts and usefu
 
 The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
 VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}.
-The Firedrake project began as an outgrowth of FEniCS and both packages implement the same domain-specific language for specifying weak forms of PDE.
-Icepack improves upon the groundwork laid in VarGlaS through its use of tensor product finite elements on extruded meshes, both of which are only available in firedrake \citep{bercea2016structure, mcrae2016automated}.
-These two features enable the definition of a much simpler 3D flow model that we will describe in \S\ref{sec:physics-hybrid-model}.
+The Firedrake project began as an outgrowth of FEniCS and both packages implement the same domain-specific language for describing weak forms of PDE.
+Icepack improves upon the groundwork laid in VarGlaS in three main respects.
+First, icepack includes a simple 3D flow model that uses several features only available in firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
+This model will be described in section \S\ref{sec:physics-hybrid-model}.
+Second, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS; see section \S\ref{sec:numerics-inverse-solvers}.
+Finally, the architecture of icepack is designed to make it easy for users to modify the components of each model, such as the rheology and basal friction.
+The software design that made this possible is discussed in section \S\ref{sec:physics-substitution}.
 
 The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
 The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation.
@@ -247,7 +251,7 @@ Using only degree 0 is exactly equivalent to the shallow stream approximation an
 The degree 1 model is the most minimalistic model that still exhibits vertical shear.
 Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
 
-\subsection{Substituting model components}
+\subsection{Substituting model components} \label{sec:physics-substitution}
 
 Many aspects of glacier physics are not completely understood.
 For example, the most common description of basal friction assumes that glacier sliding occurs through regelation, in which case the basal shear stress can be written
