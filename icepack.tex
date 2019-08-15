@@ -49,16 +49,16 @@
 
 \begin{abstract}
 In this paper we introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
-Icepack is built on the finite element modeling library firedrake, which implements the domain-specific language UFL for the specification of weak forms of partial differential equations.
-The diagnostic models implemented in icepack use variational formulations that are specified in UFL.
-Individual components of each model's action functional can be easily substituted for components of the user's choosing, facilitating experimentation with the model physics.
-Additionally, many post-processing and analysis tasks on simulation results amount to the evaluation of some functional.
+Icepack is built on the finite element modeling library firedrake, which uses the domain-specific language UFL for the describing of weak forms of partial differential equations.
+The diagnostic models in icepack are formulated through action principles that are specified in UFL.
+The components of each action functional can be substituted for different forms of the user's choosing, which makes it easy to experiment with the model physics.
+Many post-processing and analysis tasks on simulation results also amount to the evaluation of some functional.
 By using a variational formulation of the model physics, the specification of a problem and the analysis of the solution employ the same conceptual vocabulary.
 A third advantage of variational principles is that the action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
 Icepack features a 3D diagnostic model based on terrain-following coordinates and vertical spectral discretization.
-This model resolves both plug- and shear-flow components of horizontal ice flow with a minimum of computational expense over 2D, depth-averaged models.
+This model resolves both plug- and shear-flow components of horizontal ice flow with a minimum of extra computational expense over 2D, depth-averaged models.
 Finally, icepack implements a Gauss-Newton solver for inverse problems that runs substantially faster than the standard BFGS method used in the glaciological literature.
-The overall design philosophy of icepack is to enable usability for as wide a swathe of the glaciological community as possible, including both experts and novices in numerical PDE solvers and high-performance computing.
+The overall design philosophy of icepack is to be as usable as possible for a wide a swathe of the glaciological community, including both experts and novices in computational science.
 \end{abstract}
 
 \section{Introduction}
@@ -67,16 +67,16 @@ Numerical modeling has become an essential part of the workflow of glaciologists
 We highlight four main uses of glacier models in the literature:
 \begin{enumerate}
     \item predicting future glacier extent and estimating the sea-level rise contribution from glacier dynamics,
-    \item exploring poorly-understood aspects of glacier physics, such as hydrology and calving,
+    \item exploring aspects of glacier physics, such as hydrology and calving, that are not completely understood,
     \item estimating unobservable quantities, such as bed friction or rheology, from observational data, and
     \item reconstructing what glaciers of the near- or distant-past may have looked like.
 \end{enumerate}
 Nearly all glaciologists, from graduate students to senior researchers, need to use numerical models at some point in their career.
 Several glacier flow models already exist and are effective in the hands of experts.
-These models are usually written in compiled programming languages such as C, C++, and Fortran, which afford an unsurpassed degree of computational speed.
+These models are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
 Many researchers in glaciology, however, receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
-The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for using numerical models to glaciologists who are not experts in modeling as such.
-We wanted to make a tool that would be both accessible to non-experts and useful for experts.
+The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for glaciologists who are not experts in numerical modeling.
+Our goal is to make a tool that will be both accessible to non-experts and useful for experts.
 
 \textcolor{red}{We focus in this paper only on novel aspects of icepack that differ substantially from existing packages.}
 
@@ -88,16 +88,16 @@ These two features enable the definition of a much simpler 3D flow model that we
 
 The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
 The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation.
-The inputs to the diagnostic equation are the ice thickness, surface elevation, rheology, ice velocity at the inflow boundary, and the coefficient of friction for contact with the bed and side walls.
-The output of the diagnostic equation is the ice velocity throughout the entire region of interest.
+The inputs to the diagnostic equation are the ice thickness, surface elevation, velocity at the inflow boundary, rheology, and bed friction coefficient.
+The output of the diagnostic equation is the ice velocity throughout the entire domain.
 The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
-The inputs to the prognostic equation are the current value of the ice thickness, the ice velocity, and the surface and basal mass balance.
-The output is the ice thickness at a later time.
+The inputs to the prognostic equation are the current value of the ice thickness, velocity, and the surface and basal mass balance.
+The output is the ice thickness at the subsequent timestep.
 Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation.
 
-The rheology and friction coefficient may also be described in terms of other fields.
-For example, the rheology can be parameterized in terms of the ice temperature, englacial water content, and damage state.
-Likewise, the friction coefficient can be described in terms of a geological roughness factor and the subglacial water pressure.
+The rheology and friction coefficient are functions of other fields that have their own evolution equations.
+For example, the rheology is a function of temperature, englacial water content, and damage from crevassing.
+Likewise, the friction coefficient can be described in terms of the subglacial water pressure and a roughness factor for the underlying bedrock.
 The diagnostic and prognostic equations can then be supplemented with evolution equations for these fields, for example the heat equation for temperature, or a hydrology model for subglacial water pressure.
 
 
@@ -125,7 +125,7 @@ The action has units of power (energy/time) and can be related to the rate of de
 Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
 The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
 
-Irrespective of any deep connections with thermodynamics, the existence of an action principle is a tremendous convenience for numerical analysis.
+The action principle is especially useful for designing a robust numerical solver.
 For viscous flow problems near to steady-state, the action is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
 Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge from any initial guess.
 Minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation, although the two formulations are equivalent.
@@ -189,7 +189,7 @@ Not every 3D domain can be described by extruding a 2D domain, but the geometry 
 For the Stokes equations, this alternative coordinate system also helps avoid the problem of how to enforce the condition $u\cdot \nu = -\dot a_b$ at the ice base, where $\nu$ is the unit outward normal vector and $\dot a_b$ is the basal mass balance.
 This boundary condition is difficult to impose exactly because the unit outward normal vector $\nu$ is defined on mesh faces while the velocity is defined at mesh vertices.
 Elmer/Ice uses an ad-hoc procedure to define the unit normal vectors at mesh nodes \citep{gagliardini2013capabilities}.
-With a transformation to terrain-following coordinates, we can just set the terrain-following vertical velocity $\omega$ to be 0 at the ice base to impose this boundary condition.
+With a transformation to terrain-following coordinates, we can set the terrain-following vertical velocity $\omega$ to be $-\dot a_b/h$ at the ice base to impose this boundary condition.
 
 We also argue that answers expressed in terrain-following coordinates are more intuitive in some respects than in Cartesian coordinates.
 At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates is
@@ -205,10 +205,10 @@ By contrast, the vertical velocity $\omega$ in terrain-following coordinates eva
 
 Having chosen to use an extruded mesh, we must then decide how many vertical layers to use.
 In Elmer/Ice, for example, the number of vertical layers is a user-tuneable parameter, depending on the desired resolution along this axis \citep{gagliardini2013capabilities}.
-The horizontal velocity is expected to be very smooth as a function of depth.
+The horizontal velocity for many realistic flows is very smooth as a function of depth.
 For example, under the plug flow approximation, the horizontal velocity is constant with depth.
 Under the shallow ice approximation, the horizontal velocity varies with depth as $1 - (1 - \zeta)^{n + 1}$ where $n = 3$ is the Glen flow law exponent.
-This extra information about our solution suggests a different discretization strategy.
+This extra information about our solution suggests a modal rather than a nodal discretization strategy.
 
 Rather than extrude the footprint mesh into many vertical layers, we might instead use only one vertical layer and increase the polynomial degree in the vertical direction to obtain higher resolution.
 To support this use case, Firedrake includes the ability to define \emph{tensor product} elements on extruded meshes.
@@ -233,7 +233,7 @@ In any case, the code is the same regardless of how one wishes to think about th
 The user then has to decide how many vertical modes are enough.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
 The degree 1 model is the most minimalistic model that still exhibits vertical shear.
-Going to higher and higher degree gives a more accurate approximation at the expense of greater computational effort.
+Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
 
 This approach for implementing a 3D flow model works completely seamlessly but for one important detail.
 The backpressure from ocean water at the calving front of a marine-terminating glacier is not a smooth function of depth.
@@ -246,14 +246,13 @@ where $\zeta_{\text{sl}}$ denotes the relative depth to the water line and the s
 Were we to use the standard asssembly procedure in Firedrake to evaluate this integral, we would get an inaccurate result due to an insufficient number of integration points.
 The resulting velocity solutions are then wildly inaccurate due to the mis-specification of the Neumann boundary condition.
 A blunt solution to this problem would be to pass an extra argument to the Firedrake form compiler that specifies a much greater integration accuracy in the vertical for this term.
-This fix reduces, but does not eliminate, the errors in the velocities, and it incurs an appreciable computational cost.
+This fix reduces the errors in the velocities, but it does not eliminate them completely and it incurs a large computational cost.
 
 We instead implemented a routine that symbolically calculates the Legendre polynomial expansion of the function $(\zeta_{\text{sl}} - \zeta)_+$ with respect to the parameter $\zeta_{\text{sl}}$ using the package SymPy \citep{sympy}.
 The symbolic variables for $\zeta$ and $\zeta_{\text{sl}}$ used in the SymPy representation of the polynomial expansion are then substituted for equivalent symbolic variables in Firedrake/UFL using the SymPy object's \texttt{subs} method.
-Since the result of this symbolic Legendre polynomial expansion is the same upon every invocation, we can save the effort of recalculating it every time by caching the results.
 The Legendre polynomial approximation to this function only converges linearly as the number of coefficients is increased, since the the function is continuous but not smooth, and the approximation exhibits noticeable ringing artifacts \textcolor{red}{figure}.
 While the approximation itself is not very accurate, the calculated value of the integral in equation \eqref{backpressure} is exact because of the orthogonality property.
-Stated another way, the residuals in the approximation are large, but they integrate to 0 when multiplied by any Legendre polynomial up to the expansion limit.
+Stated another way, the residuals in the approximation are large, but they integrate to 0 when multiplied by any Legendre polynomial up to the number of vertical modes.
 
 The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
 The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
@@ -299,17 +298,16 @@ To support use cases like implementing the Schoof sliding law, it must be possib
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
 In programming terms this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
-In C++ one could obviate the need to modify the diagnostic solve routine by using variadic templates.
-But variadic templates are a more advanced language feature and relying on them would arguably present a steep learning curve for novices.
+In C++ one could avoid modifying the diagnostic solve routine by using variadic templates.
+Variadic templates are a more advanced language feature and relying on them would present a steep learning curve for novices.
 
-In icepack, any given model physics component can be substituted for a parameterization of the user's choosing.
-Every flow model in icepack is represented by a Python object, and each model object is initialized with a set of functions to calculate the various terms of the action functional.
+Any model physics component in icepack can be substituted for a parameterization of the user's choosing.
+Each flow model object is initialized with a set of functions to calculate the various terms of the action functional.
 For example, the ice stream model is initialized with functions to calculate the contributions due to viscosity, basal friction, side wall drag, and gravity.
-Sensible parameterizations are selected by default.
-If the user does wish to change a given component, they can pass a function that they write to the initializer for the model object.
+The default parameterizations are set to the most common choices in the literature, but if the user does wish to change a given component, they can pass a function that they write to the initializer for the model object.
 When the diagnostic solve procedure is invoked, all of its arguments are then passed on by keyword to the method that calculates the action functional.
-Any fields that are unnecessary for calculating a given component are simply ignored.
-For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function simply makes no use of these arguments.
+Any fields that are unnecessary for calculating a given component are ignored.
+For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function makes no use of these arguments.
 The functional form can be changed entirely and new arguments can be added, with the only restriction that they are passed as keyword and not as positional arguments.
 
 We are restricted to using keyword arguments instead of positional arguments in adopting this approach.
@@ -325,8 +323,9 @@ Many scientific software packages consist of a highly-optimized core library in 
 This approach in principle offers the best of both worlds -- the runtime efficiency of a compiled language with the convenience and interactivity of an interpreted one.
 Many practitioners, however, will use such a library entirely through the interpreted surface layer and have no familiarity with the language in which the fast core was written.
 These users then have a steep learning curve to overcome when they need to modify functionality that lives in the core library, as they now need to learn an entirely new programming language.
-Some low-level kernel code is always necessary for runtime efficiency of course.
-With Firedrake, this responsibility is deferred to a code generator of which the average user remains blissfully unaware.
+Some low-level kernel code is, of course, always necessary for runtime efficiency.
+With Firedrake, this responsibility is deferred to a code generator.
+The average user can remain largely unaware of how the code generator works even when solving very advanced problems.
 
 
 \subsection{Convergence criteria} \label{sec:convergence-criteria}
@@ -351,8 +350,9 @@ For $u_k$ sufficiently close to the true solution $u$, the Newton decrement roug
 \end{equation}
 We can then use the Newton decrement to decide when to stop the iteration.
 
-As shown in equation \eqref{action-functional}, the action has units of power and is the sum of the dissipation due to viscosity, friction, gravitational driving, and restrain by ocean pressure at the terminus.
-The viscous and frictional terms are convex and positive functions of the velocity, while the gravitational and terminus stress terms are linear in the velocity and can be of either sign.
+As shown in equation \eqref{action-functional}, the action has units of power and is the sum of the dissipation due to viscosity, friction, gravitational driving, and ocean back-pressure at the terminus.
+The viscous and frictional terms are convex, positive functions of the velocity.
+The gravitational and terminus stress terms are linear in the velocity and can be of either sign.
 If we define the \emph{scale functional}
 \begin{equation}
     K(u) = \text{viscous dissipation} + \text{frictional dissipation}
@@ -457,7 +457,7 @@ The resulting coefficient is then used as the initial guess with higher degree v
 
 \section{Usability}
 
-One of the main goals for icepack was to create a tool that is accessible to researchers who might not be experts in scientific computing.
+One of the main goals for icepack is to create a tool that is accessible to researchers who might not be experts in scientific computing.
 Previous work on numerical modeling of glacier flow has focused largely on technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory, does it scale to large numbers of processors, can models accurately predict grounding line retreat, etc.
 The fallible human learning to use the model is largely absent from the discussion.
 
@@ -472,8 +472,8 @@ This obviates the need for consulting the documentation or examples.
 
 \textbf{Progressive evaluation: How easily can users get feedback during their use of the software?}
 Progressive evaluation is the main advantage of having a user interface in Python or another interpreted language, as opposed to using compiled programs that must run all at once.
-Icepack includes a suite of demos that demonstrate all of the main functions of the package.
-These demos are formatted as Jupyter notebooks, a document format that includes code, figures, and explanatory text with typeset mathematics that can be run interactively in a web browser \citep{kluyver2016jupyter}.
+Icepack includes a suite of example programs that demonstrate all of the main functions of the package.
+These demos are formatted as Jupyter notebooks, a document format that includes code, figures, and explanatory text with typeset mathematics that runs interactively in a web browser \citep{kluyver2016jupyter}.
 A notebook is a sequence of cells, each of which consists of either code or text.
 The code cells can be executed one-at-a-time and this enables users to insert diagnostics in each cell as they go.
 Most importantly, the notebook format also integrates the plotting library matplotlib so that figures created in each cell appear directly beneath that cell as it is executed.
@@ -489,7 +489,7 @@ Moreover, the default behavior we choose always biases for correctness rather th
 For example, the Newton solver uses a direct factorization method to solve the linear system for the search direction because factorization requires no tuning whereas iterative methods do.
 A user interested in achieving greater runtime performance can pass additional keyword arguments instead specifying, say, the conjugate gradient method.
 This choice is of interest mostly to advanced users so we keep the linear solver method as a default argument.
-In so doing, we avoid confronting novice users with an option that they might not understand.
+In so doing, we avoid confronting novice users with options that they might not understand.
 
 Advanced users who wish to tune solver performance for large simulations will need some way to make choices about algorithms.
 For example, a more advanced user might choose the GMRES iterative solver together with an incomplete LU preconditioner to solve linear systems.
