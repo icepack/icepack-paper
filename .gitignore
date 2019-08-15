@@ -5,6 +5,9 @@ __pycache__/
 ## Figures
 *.png
 
+## Model output
+*.h5
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
