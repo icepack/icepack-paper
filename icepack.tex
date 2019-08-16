@@ -506,11 +506,20 @@ The resulting velocity solutions are then wildly inaccurate due to the mis-speci
 A blunt solution to this problem would be to pass an extra argument to the Firedrake form compiler that specifies a much greater integration accuracy in the vertical for this term.
 This fix reduces the errors in the velocities, but it does not eliminate them completely and it incurs a large computational cost.
 
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/legendre/pressure.png}
+    \caption{The normalized ocean pressure ($p_w / \rho_Wg$) and Legendre polynomial approximations of several degrees (left), and the residuals of the approximation (right).
+    For this particular example, the waterline is at $\zeta = 1/3$.
+    The moments of each of the residuals up to the approximation degree are all zero.}
+    \label{fig:legendre}
+\end{figure}
+
 We instead implemented a routine that symbolically calculates the Legendre polynomial expansion of the function $(\zeta_{\text{sl}} - \zeta)_+$ with respect to the parameter $\zeta_{\text{sl}}$ using the package SymPy \citep{sympy}.
 The symbolic variables for $\zeta$ and $\zeta_{\text{sl}}$ used in the SymPy representation of the polynomial expansion are then substituted for equivalent symbolic variables in Firedrake/UFL using the SymPy object's \texttt{subs} method.
-The Legendre polynomial approximation to this function only converges linearly as the number of coefficients is increased, since the the function is continuous but not smooth, and the approximation exhibits noticeable ringing artifacts \textcolor{red}{figure}.
+The Legendre polynomial approximation to this function only converges linearly as the number of coefficients is increased, since the the function is continuous but not smooth, and the approximation exhibits noticeable ringing artifacts at high degree.
 While the approximation itself is not very accurate, the calculated value of the integral in equation \eqref{backpressure} is exact because of the orthogonality property of Legendre polynomials.
 Stated another way, the residuals in the approximation are large, but they integrate to 0 when multiplied by any Legendre polynomial up to the number of vertical modes.
+An example of the pressure approximations using linear, quadratic, and cubic Legendre polynomials are shown in figure \ref{fig:legendre}.
 
 The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
 The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
