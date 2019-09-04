@@ -75,7 +75,7 @@ Nearly all glaciologists, from graduate students to senior researchers, need to 
 Several glacier flow models already exist and are effective in the hands of experts.
 These models are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
 Many researchers in glaciology, however, receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
-The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for glaciologists who are not experts in numerical modeling.
+The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for glaciologists who are not experts in high-performance computing.
 Our goal is to make a tool that will be both accessible to non-experts and useful for experts.
 
 The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
@@ -84,9 +84,9 @@ The Firedrake project began as an outgrowth of FEniCS and both packages implemen
 Icepack improves upon the groundwork laid in VarGlaS in three main respects.
 First, icepack includes a simple 3D flow model that uses several features only available in firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
 This model will be described in section \S\ref{sec:physics-hybrid-model}.
-Second, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS; see section \S\ref{sec:numerics-inverse-solvers}.
-Finally, the architecture of icepack is designed to make it easy for users to modify the components of each model, such as the rheology and basal friction.
+Second, the architecture of icepack is designed to make it easy for users to alter the various physics components, such as the rheology and basal friction, of any of the models included.
 The software design that made this possible is discussed in section \S\ref{sec:physics-substitution}.
+Finally, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS; see section \S\ref{sec:numerics-inverse-solvers}.
 
 The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
 The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation.
@@ -213,7 +213,7 @@ At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates
     w = -\dot a_b + u\cdot\nabla b.
 \end{equation}
 Knowing that a model gives a vertical velocity at the base of a glacier of, say, 10 cm/year, the modeler needs to also know the bed slope and sliding velocity.
-In other words it is not immediately clear whether the vertical velocity is more a result of basal mass balance or of geometry without more information.
+In other words, it is not immediately clear whether the vertical velocity is a result of basal mass balance or of geometry without additional information.
 By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
 
 
@@ -228,7 +228,7 @@ For example, under the plug flow approximation, the horizontal velocity is const
 Under the shallow ice approximation, the horizontal velocity varies with depth as $1 - (1 - \zeta)^{n + 1}$ where $n = 3$ is the Glen flow law exponent.
 This extra information about our solution suggests a modal rather than a nodal discretization strategy.
 
-Rather than divide the geometry into many vertical layers, we can instead use only one vertical layer and increase the polynomial degree in the vertical direction to obtain higher resolution.
+Rather than divide the spatial domain into many vertical layers, we can instead use only one vertical layer and increase the polynomial degree in the vertical direction to obtain higher resolution.
 This type of basis, in which different shape functions are used in different dimensions, is called a \emph{tensor product} element.
 Given a set of finite element basis functions $\{\phi_k(x, y)\}$ defined on the 2D domain $\Omega$ and a set of basis functions $\{\psi_l(\zeta)\}$ defined on the unit interval $[0, 1]$, the tensor product finite element basis $\{\Phi_{kl}\}$ on the extruded domain is defined as
 \begin{equation}
@@ -244,7 +244,7 @@ Alternatively, we can view vertical semi-discretization as defining a family of 
 The order-$d$ model defines a coupled system of PDEs for $d$ vector fields.
 Each vector field represents one mode of vertical variability, similar to the distinction between barotropic and baroclinic modes in atmospheric physics and oceanography.
 The system is then discretized in the horizontal and solved numerically.
-In any case, the code is the same regardless of how one wishes to think about the underlying mathematics.
+In any case, the code is the same regardless of how one views the underlying mathematics.
 
 The user then has to decide how many vertical modes are enough.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
@@ -272,7 +272,7 @@ Implementing these more sophisticated mathematical models would require adding a
 One of our goals with icepack is to facilitate experimentation with the model physics.
 To support use cases like implementing the Schoof sliding law, it must be possible to completely alter the functional form of a given model physics component.
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
-In programming terms this amounts to changing the number of arguments to the function that calculates basal shear stress.
+In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
 In C++ one could avoid modifying the diagnostic solve routine by using variadic templates.
 Variadic templates are a more advanced language feature and relying on them would present a steep learning curve for novices.
@@ -284,13 +284,15 @@ The default parameterizations are set to the most common choices in the literatu
 When the diagnostic solve procedure is invoked, all of its arguments are then passed on by keyword to the method that calculates the action functional.
 Any fields that are unnecessary for calculating a given component are ignored.
 For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function makes no use of these arguments.
-The functional form can be changed entirely and new arguments can be added, with the only restriction that they are passed as keyword and not as positional arguments.
+The user can completely change the functional form and add new arguments, with the restriction that arguments are passed by keyword and not positionally.
 
-We are restricted to using keyword arguments instead of positional arguments in adopting this approach.
-For the particular case of passing several fields to a physics solver routine, using only keyword arguments enhances readability and comprehensibility.
+In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
+Using only keyword arguments enhances readability and comprehensibility for this particular case of invoking a physics solver.
 The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used in the literature -- $C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.
 The order of the arguments is arbitrary and immaterial.
-For defining, say, the bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance and our design would be inappropriate.
+The preference for argument passing by name is specific to this use case and not universal.
+For example, in defining a bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance.
+In that case using positional arguments would better correspond with the underlying problem.
 
 One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
 Since many aspects of glacier flow are not understood completely, we view extensibility as an essential requirement for any software package in this domain.
@@ -323,7 +325,8 @@ This information is passed to the inverse problem by specifying the names of the
 
 The \texttt{InverseSolver} class is responsible for actually solving the inverse problem.
 This class will be described further in section \S\ref{sec:numerics-inverse-solvers}.
-We reiterate the inverse solver is completely agnostic to the particular parameterization of the physics in terms of the field that is being inferred, so long as it guarantees positivity.
+The inverse solver is completely agnostic to the particular parameterization of the physics in terms of the inferred field as long as it guarantees positivity.
+This feature interacts seamlessly with the ability to modify individual model physics components as described in \S\ref{sec:physics-substitution}.
 
 
 \subsection{Damage transport}
@@ -380,7 +383,10 @@ Other software packages that treat diagnostic models as nonlinear systems of equ
 For example, without a damping procedure in Newton's method, the iteration can prove unstable if initialized far away from the true solution.
 Some packages combat this problem by using a few iterations of the more robust but slower Picard method first \textcolor{red}{cite}.
 While this approach can be effective it requires tuning the number of Picard iterations and there is no guarantee that an adequate amount for one problem will work well on another problem.
-By contrast, a damped Newton procedure using a line search that satisfies the Armijo-Wolfe criteria is guaranteed to converge on non-degenerate input data.
+This issue rarely appears on realistic input data.
+When solving inverse problems, however, the intermediate guesses for the inferred field can be wildly unrealistic before converging.
+A forward model solver that is not sufficiently robust can crash in these extreme scenarios.
+By contrast, a damped Newton procedure using a line search that satisfies the Armijo-Wolfe criteria is guaranteed to converge on non-degenerate, if unrealistic, input data.
 
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
@@ -420,7 +426,7 @@ is independent of the discretization.
 The intuition behind this criterion is that the iteration is halted when the expected decrease in the action functional is much smaller than the positive part of the action itself.
 
 We have found empirically that, with this criterion and the Newton solver implementation in icepack, the iteration usually converges to machine precision in around 8 steps.
-For exceptionally bad initial guesses the iteration count can reach as high as 20 but rarely more.
+The iteration count can reach as high as 20 for exceptionally bad initial guesses for the velocity or with unphysical fluidity or friction values.
 We also observe the expected doubling of the number of accurate digits in the value of the action once the velocity guesses are within the convergence basin of the true solution.
 Other convergence criteria, such as using relative change in the velocity guesses, can terminate prematurely when the initial guess is very far outside the quadratic convergence basin.
 
@@ -447,7 +453,8 @@ However, the search direction can be poorly scaled to the physical dimensions of
 This method can be very expensive and brittle in the initial iterations and often takes many steps to converge.
 
 The BFGS method uses the past $m$ iterations of the algorithm to compute a low-rank approximation to the inverse of the objective functional's Hessian matrix; see \citet{nocedal2006numerical} for a more in-depth discussion.
-The BFGS method converges faster than gradient descent but suffers from many of the same brittleness issues in the initial iterations before it has accumulated enough history.
+The BFGS method converges faster than gradient descent.
+However, it suffers from many of the same brittleness issues in the initial iterations before it has built up enough history to approximate the Hessian inverse.
 
 Finally, the Gauss-Newton solver defines an approximation to the ``first-order'' part of the objective functional Hessian.
 Each iteration of Gauss-Newton is more expensive than that of BFGS or gradient descent because it requires the solution of a more complex linear system than just the mass matrix.
@@ -473,11 +480,11 @@ The cells of an extruded mesh are triangular prisms instead of the more common t
 Not every 3D domain can be described by extruding a 2D domain, but the geometry of most glacier flow problems can.
 
 The geometric correction factor in equation \eqref{eq:geometric-correction} for gradients in terrain-following coordinates can easily be represented in UFL.
-By defining a wrapper around the UFL \texttt{grad} function, the code to define the action functional in terrain-following coordinates is no more complex than in Cartesian coordinates.
+By defining a wrapper around the UFL \texttt{grad} function, the code to define the action functional in terrain-following coordinates is only slightly more complex than in Cartesian coordinates.
 
 For problems defined on extruded geometries, firedrake includes support for tensor product elements, which includes using different bases in the horizontal and vertical directions \citep{mcrae2016automated}.
 Tensor product elements are defined in Firedrake by passing the extra keyword arguments \texttt{vfamily}, \texttt{vdegree} to the constructor for a function space.
-In our case, we used the traditional continuous Galerkin basis in the horizontal and Gauss-Legendre elements in the vertical.
+In our case, we used the usual continuous Galerkin basis in the horizontal and Gauss-Legendre elements in the vertical.
 To select the Legendre polynomial basis, the user passes the keyword argument \texttt{vfamily=`Gauss-Legendre'} or \texttt{`GL'} for short to the constructor for the function space.
 
 Extruded meshes and tensor product elements are available in firedrake but not in FEniCS.
@@ -502,7 +509,7 @@ This fix reduces the errors in the velocities, but it does not eliminate them co
 We instead implemented a routine that symbolically calculates the Legendre polynomial expansion of the function $(\zeta_{\text{sl}} - \zeta)_+$ with respect to the parameter $\zeta_{\text{sl}}$ using the package SymPy \citep{sympy}.
 The symbolic variables for $\zeta$ and $\zeta_{\text{sl}}$ used in the SymPy representation of the polynomial expansion are then substituted for equivalent symbolic variables in Firedrake/UFL using the SymPy object's \texttt{subs} method.
 The Legendre polynomial approximation to this function only converges linearly as the number of coefficients is increased, since the the function is continuous but not smooth, and the approximation exhibits noticeable ringing artifacts \textcolor{red}{figure}.
-While the approximation itself is not very accurate, the calculated value of the integral in equation \eqref{backpressure} is exact because of the orthogonality property.
+While the approximation itself is not very accurate, the calculated value of the integral in equation \eqref{backpressure} is exact because of the orthogonality property of Legendre polynomials.
 Stated another way, the residuals in the approximation are large, but they integrate to 0 when multiplied by any Legendre polynomial up to the number of vertical modes.
 
 The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
