@@ -596,8 +596,11 @@ For example, a more advanced user might choose the GMRES iterative solver togeth
 The solver classes, as opposed to the model classes, provide the interface for making these kinds of algorithmic choices.
 While alternative solvers might offer faster runtime performance than direct factorization, they also requires making additional choices choices -- how often to restart GMRES?
 How much fill-in to allow in the incomplete factorization?
-Many glaciologists might not have the background in computational science to know that adjusting these parameters could make the difference between solver convergence or breakdown.
-\textcolor{red}{Also stabilization of the Stokes equations.}
+Many glaciologists do not have the background in numerical linear algebra to know that adjusting these parameters could make the difference between solver convergence or breakdown.
+Similarly, users might want to select between different discretization strategies for the Stokes equations, which must be chosen carefully in order to satisfy the Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) conditions \citep{boffi2013mixed}.
+When using Galerkin least-squares \textcolor{red}{check that's actually what it is} stabilization of the weak form, the user has to pick a value of the stabilization parameter.
+Determining exactly what value of this parameter is necessary to guarantee stability is a subtle problem, even more so for the kinds of highly anisotropic meshes that are commonly encountered in 3D glacier flow modeling.
+If the solver fails to converge, it might not be obvious even to an expert whether the problem lies with the stabilization or the aforementioned parameters of the linear solver.
 
 
 \section{Discussion}
