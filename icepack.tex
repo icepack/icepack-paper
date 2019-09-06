@@ -320,7 +320,7 @@ To specify an inverse problem, the user must provide:
 \end{itemize}
 At present, this class assumes that the observed state is always the ice velocity, but in principle the same design would suffice for more complicated inverse problems.
 More importantly, the inverse problem is flexible enough to account for the fact that we might have substituted in our own parameterization for the rheology or friction coefficient.
-For example, nearly all studies in the literature use an alternate parameterization of these coefficients in terms of some auxiliary field in order to guarantee positivity \textcolor{red}{citations}.
+For example, nearly all studies in the literature use an alternate parameterization of the friction coefficient in terms of some auxiliary field in order to guarantee positivity \citep{macayeal1992basal, joughin2009basal}.
 This information is passed to the inverse problem by specifying the names of the keyword arguments for the observed state and the field we wish to observe.
 
 The \texttt{InverseSolver} class is responsible for actually solving the inverse problem.
@@ -381,7 +381,7 @@ The action functional for each diagnostic model is convex, i.e. the second deriv
 
 Other software packages that treat diagnostic models as nonlinear systems of equations tend to rely on ad-hoc procedures for initializing the numerical solution process.
 For example, without a damping procedure in Newton's method, the iteration can prove unstable if initialized far away from the true solution.
-Some packages combat this problem by using a few iterations of the more robust but slower Picard method first \textcolor{red}{cite}.
+Some packages combat this problem by using a few iterations of the more robust but slower Picard method first \citep{gagliardini2013capabilities}.
 While this approach can be effective it requires tuning the number of Picard iterations and there is no guarantee that an adequate amount for one problem will work well on another problem.
 This issue rarely appears on realistic input data.
 When solving inverse problems, however, the intermediate guesses for the inferred field can be wildly unrealistic before converging.
@@ -488,7 +488,7 @@ In our case, we used the usual continuous Galerkin basis in the horizontal and G
 To select the Legendre polynomial basis, the user passes the keyword argument \texttt{vfamily=`Gauss-Legendre'} or \texttt{`GL'} for short to the constructor for the function space.
 
 Extruded meshes and tensor product elements are available in firedrake but not in FEniCS.
-Other general-purpose finite element modeling packages that support tensor product elements include deal.II and nektar++ \textcolor{red}{cite}.
+Other general-purpose finite element modeling packages that support tensor product elements include deal.II and nektar++ \citep{bangerth2007deal, cantwell2015nektar++}.
 Like most other packages in this domain, deal.II and nektar++ are written in C++, whereas our goal for icepack was to have both the core and the user interface in Python.
 
 \subsubsection{Ocean boundary condition}
