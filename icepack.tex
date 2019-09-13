@@ -257,6 +257,7 @@ Many aspects of glacier physics are not completely understood.
 For example, the most common description of basal friction assumes that glacier sliding occurs through regelation, in which case the basal shear stress can be written
 \begin{equation}
     \tau_b = -C|u|^{\frac{1}{m} - 1}u
+    \label{eq:weertman-sliding}
 \end{equation}
 with $m = 3$ \citep{weertman1957sliding}.
 Many authors have argued that, in fast-flowing regions of the ice sheet, glacier sliding occurs instead by plastic deformation within the subglacial sediments \citep{tulaczyk2000basal}.
@@ -547,7 +548,47 @@ The resulting coefficient is then used as the initial guess with higher degree v
 
 \section{Demonstrations}
 
-\subsection{MISMIP}
+\subsection{MISMIP+}
+
+As a first test case for icepack, we ran the first experiment from the Marine Ice Sheet Model Intercomparison Project version 3 (MISMIP+).
+The parameters and geometry for this experiment can be found in \citet{asay2016experimental}.
+The MISMIP+ experiment has three phases.
+First, the model must find a steady state marine ice sheet with a fixed accumulation rate and no submarine melting.
+Next, submarine melting with a given depth-dependent parameterization is applied for 100 years.
+The increased melt thins the ice ice shelf and initiates a retreat of the glacier grounding line.
+Finally, submarine melting is turned off for at least 200 years, optionally longer.
+The grounding line then readvances, but not as far as its original position.
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state.png}
+    \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the Weertman sliding law.}
+    \label{fig:mismip}
+\end{figure}
+
+The original intercomparison project specified that participants could use the Weertman sliding law (equation \eqref{eq:weertman-sliding}) as well as two other sliding laws that transition to a more plastic rheology at high sliding speeds.
+The first alternative sliding law consists of Weertman sliding until the stress reaches a critical value, at which point the constitutive relation transitions to perfect plasticity.
+The second alternative is the Schoof sliding law \citep{schoof2005effect}:
+\begin{equation}
+    \tau_b = -\frac{C|u|^{1/m}\cdot \tau_c}{(C^m|u| + \tau_c^m)^{1/m}}\frac{u}{|u|},
+    \label{eq:schoof-sliding}
+\end{equation}
+where the critical stress $\tau_c$ is a certain specified fraction of the water pressure in the subglacial hydrological system.
+Rather than specify the sliding law as such, icepack expresses the sliding law as the derivative of some action functional.
+In other words, to implement the Schoof sliding law in icepack, we need to know the antiderivative of equation \eqref{eq:schoof-sliding}.
+Using a computer algebra system, we found that the antiderivative of this expression in terms of hypergeometric functions.
+The Unified Form Language has several transcendental functions (sine, cosine, exponential, etc.), but it does not currently support hypergeometric functions.
+Instead, we implemented a sliding relation that exhibits the important features of the Schoof law, i.e. it behaves like an $m = 3$ power law at low sliding speeds and $m = \infty$ at high sliding speeds, but which is more tractable algebraically.
+The power dissipation density for this sliding law is
+\begin{equation}
+    P = \tau_c\left(\left(u_c^{\frac{1}{m} + 1} + |u|^{\frac{1}{m} + 1}\right)^{\frac{m}{m + 1}} - u_c\right).
+\end{equation}
+A sample of the source code implementing both of these approaches is shown in \textcolor{red}{Figure X}.
+To change the sliding law, users only need to pass one function or the other to the model object at initialization.
+Users do not need to implement a subclass that overrides some parent method.
+This approach would be idiomatic in C++, but it requires some facility with object-oriented programming that a non-expert might lack.
+
+Figure \ref{fig:mismip} shows the outcome of the MISMIP+ experiment performed using icepack.
+
 
 \subsection{Larsen C Ice Shelf}
 
