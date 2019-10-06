@@ -275,8 +275,7 @@ To support use cases like implementing the Schoof sliding law, it must be possib
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
 In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
-In C++ one could avoid modifying the diagnostic solve routine by using variadic templates.
-Variadic templates are a more advanced language feature and relying on them would present a steep learning curve for novices.
+In C++ one could avoid modifying the diagnostic solve routine by using variadic templates, but this is an advanced language feature and relying on it would present a steep learning curve for novices.
 
 Any model physics component in icepack can be substituted for a parameterization of the user's choosing.
 Each flow model object is initialized with a set of functions to calculate the various terms of the action functional.
@@ -377,8 +376,28 @@ The implicit Euler scheme would obscure this feature and an alternative method s
 
 \subsection{Convex optimization}
 
-The action functional for each diagnostic model is convex, i.e. the second derivative is positive-definite.
-\textcolor{red}{Why it's great...}
+The action functional for each diagnostic model is convex, i.e. the second derivative is strictly positive-definite.
+From a theoretical persepctive, convexity guarantees that the problem has a unique solution.
+This property is also especially advantageous for implementing numerical solvers.
+We use a damped Newton method to solve the diagnostic equations.
+Starting from a guess $u_k$ for the velocity, one first computed a \emph{search direction} $v_k$ that solves a linear equation:
+\begin{equation}
+    \ud^2J(u_k)\cdot v_k = -\ud J(u_k).
+    \label{eq:newton-search-direction}
+\end{equation}
+The next value of the velocity is then computed by searching along $v_k$:
+\begin{equation}
+    u_{k + 1} = u_k + \alpha_k\cdot v_k,
+\end{equation}
+where $\alpha$ is chosen to minimize $J$ along the search direction.
+For an initial guess sufficiently close to the exact solution, the undamped Newton method ($\alpha_k = 1$ at every step) converges quadratically.
+The line search step ensures that the method can converge even from a poor initial guess, provided that the line search method satisfies the Armijo-Wolfe criteria \citep{nocedal2006numerical}.
+
+For a convex problem, $\ud^2J$ is a symmetric and positive-definite matrix.
+This has two advantages.
+First, the search direction is always a descent direction for $J$.
+For non-convex problems this is not always the case and some adaptation strategy must be employed in the vicinity of saddle points.
+Second, symmetry and positivity enable the use of specialized linear solvers, such as the Cholesky decomposition or the conjugate gradient algorithm, that are superior to their more general counterparts in many respects.
 
 Other software packages that treat diagnostic models as nonlinear systems of equations tend to rely on ad-hoc procedures for initializing the numerical solution process.
 For example, without a damping procedure in Newton's method, the iteration can prove unstable if initialized far away from the true solution.
@@ -392,16 +411,14 @@ By contrast, a damped Newton procedure using a line search that satisfies the Ar
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
 
-Calculating the ice velocity from the geometry and other input fields involves minimizing a convex functional.
-The minimizer can only be approximated, so we employ iterative procedures based on Newton's method with a line search.
-We must then choose some metric to decide when the current guess for the velocity is good enough to stop the iteration.
+Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation, but few if any have considered the problem of when to stop iterating.
+The most common stopping criteria are when (1) the 2-norm of the residual is sufficiently small or (2) the relative change in the iterates is sufficiently small.
+Each of these approaches has problems.
+The residual norm depends on the discretization and does not weight all degrees of freedom proportionally, e.g. vertex and edge degrees of freedom in higher-order finite element methods.
+The relative change criterion, on the other hand, can suggest convergence when in fact the method has stagnated.
 
 A convergence criterion that works equally well independent of the mesh, finite element discretization, and the quality of the initial guess can be defined based on the idea of the \emph{Newton decrement} \citep{nocedal2006numerical}.
-The search direction $v_k$ at step $k$ for Newton's method is defined as
-\begin{equation}
-    v_k = -\ud^2J(u_k)^{-1}\ud J(u_k).
-\end{equation}
-Since the second derivative operator $\ud^2J(u_k)$ is positive-definite, this is a descent direction for the action $J$:
+Since the second derivative operator $\ud^2J(u_k)$ is positive-definite, the Newton search direction $v_k$ computed from equation \eqref{eq:newton-search-direction} is a descent direction for $J$:
 \begin{equation}
     \ud J(u_k)\cdot v_k < 0.
 \end{equation}
