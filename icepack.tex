@@ -609,6 +609,35 @@ Figure \ref{fig:mismip} shows the outcome of the MISMIP+ experiment performed us
 
 \subsection{Larsen C Ice Shelf}
 
+To demonstrate the forward and inverse modeling capabilities of icepack, we will estimate the rheology of the Larsen C Ice Shelf in the Antarctic Peninsula from observational data and project the model forward by 10 years.
+Several recent studies have focused on Larsen C because it may be unstable in the warmer climate of the coming decades.
+From January to March of 2002, the neighboring Larsen B Ice Shelf disintegrated due to surface melt pond-induced fracture \textcolor{red}{check that this is the currently-accepted explanation and cite}, and this mechanism could also lead to the breakup of Larsen C.
+One of the key factors affecting the stability of ice shelves is the presence of marine ice -- seawater that freezes onto the base of an ice shelf -- in the suture zones where two flow units meet \citep{kulessa2014marine}.
+Marine ice is warmer than meteoric ice and usually includes brine pockets, which are discernible in radio echo sounding measurements as the absence of reflection from the ice shelf base \citep{holland2009marine}.
+This warmer and impurity-laden ice is more ductile and thus less prone to fracture than cold and brittle meteoric ice.
+Ocean models predict that marine ice forms under Larsen C as well \citep{holland2009marine}.
+By estimating the material hardness or rheology of an ice shelf, we can constrain where marine ice may be forming.
+
+
+\subsubsection{Data}
+
+\subsubsection{Parameterization}
+
+The rheology parameter of an ice shelf is strictly positive.
+The optimization algorithm, however, can explore unphysical regions of parameter space without some a priori constraint on what values are reasonable.
+Rather than try to solve an inequality-constrained problem, most studies in glaciology instead re-parameterize the problem in terms of some auxiliary field in such a way that the rheology is manifestly positive.
+In this case we will use the parameterization
+\begin{equation}
+    B = B_0e^{\theta}
+\end{equation}
+and estimate $\theta$.
+The inverse solver calculates the derivative of the objective functional symbolically and is thus agnostic to the particular parameterization.
+The only information that the user needs to pass is the name of the arguments to the forward model representing the parameter and the observed field so that these can be passed by keyword.
+
+
+\subsubsection{Results}
+
+
 \subsection{Jakobshavn Isbrae}
 
 
