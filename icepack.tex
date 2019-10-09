@@ -576,12 +576,6 @@ The increased melt thins the ice ice shelf and initiates a retreat of the glacie
 Finally, submarine melting is turned off for at least 200 years, optionally longer.
 The grounding line then readvances, but not as far as its original position.
 
-\begin{figure}[h]
-    \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state.png}
-    \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the Weertman sliding law.}
-    \label{fig:mismip}
-\end{figure}
-
 The original intercomparison project specified that participants could use the Weertman sliding law (equation \eqref{eq:weertman-sliding}) as well as two other sliding laws that transition to a more plastic rheology at high sliding speeds.
 The first alternative sliding law consists of Weertman sliding until the stress reaches a critical value, at which point the constitutive relation transitions to perfect plasticity.
 The second alternative is the Schoof sliding law \citep{schoof2005effect}:
@@ -621,6 +615,19 @@ Users do not need to implement a subclass that overrides some parent method.
 This approach would be idiomatic in C++, but it requires some facility with object-oriented programming that a non-expert might lack.
 
 Figure \ref{fig:mismip} shows the outcome of the MISMIP+ experiment performed using icepack.
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state.png}
+    \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the Weertman sliding law.}
+    \label{fig:mismip}
+\end{figure}
+
+Using variational principles to express all constitutive laws is less flexible than specifying the sliding law directly and this is a distinct disadvantage.
+We were able to implement a sliding law that exhibits many of the characteristics of the Schoof sliding law.
+\citet{asay2016experimental} also suggest using a sliding law that transitions sharply to exact plasticity above the critical speed.
+Expressing this sliding law in UFL requires a conditional in the velocity and is thus no longer differentiable.
+This lack of differentiability makes the forward solver crash.
+The numerical advantages of using variational principles are so great, however, that we view this tradeoff as acceptable.
 
 
 \subsection{Larsen C Ice Shelf}
