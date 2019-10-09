@@ -59,12 +59,15 @@ C = Constant(1e-2)
 from icepack.constants import (ice_density as ρ_I, water_density as ρ_W,
                                gravity as g, weertman_sliding_law as m)
 def friction(u, h, s, C):
-    u_b = sqrt(inner(u, u))
     p_W = ρ_W * g * max_value(0, -(s - h))
     p_I = ρ_I * g * h
     N = p_I - p_W
-    ϕ = N / p_I
-    return m / (m + 1) * C * ϕ * u_b**(1/m + 1) * dx
+    τ_c = N / 2
+
+    u_c = (τ_c / C)**m
+    u_b = sqrt(inner(u, u))
+
+    return τ_c * ((u_c**(1/m + 1) + u_b**(1/m + 1))**(m / (m + 1)) - u_c) * dx
 
 model = icepack.models.IceStream(friction=friction)
 opts = {'dirichlet_ids': [1], 'side_wall_ids': [3, 4], 'tol': 1e-8}
