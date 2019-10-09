@@ -590,15 +590,31 @@ The second alternative is the Schoof sliding law \citep{schoof2005effect}:
     \label{eq:schoof-sliding}
 \end{equation}
 where the critical stress $\tau_c$ is a certain specified fraction of the water pressure in the subglacial hydrological system.
-Rather than specify the sliding law as such, icepack expresses the sliding law as the derivative of some action functional.
-In other words, to implement the Schoof sliding law in icepack, we need to know the antiderivative of equation \eqref{eq:schoof-sliding}.
+In icepack sliding laws are not expressed directly but rather as the the derivative of an acction functional.
+To implement the Schoof sliding law we need to know the antiderivative of equation \eqref{eq:schoof-sliding}.
 Using a computer algebra system, we found that the antiderivative of this expression in terms of hypergeometric functions.
 The Unified Form Language has several transcendental functions (sine, cosine, exponential, etc.), but it does not currently support hypergeometric functions.
 Instead, we implemented a sliding relation that exhibits the important features of the Schoof law, i.e. it behaves like an $m = 3$ power law at low sliding speeds and $m = \infty$ at high sliding speeds, but which is more tractable algebraically.
-The power dissipation density for this sliding law is
+Knowing the critical stress $\tau_c$ and the friction coefficient $C$, which has units of stress $\times$ speed${}^{-1/m}$, we can define a \emph{critical speed} $u_c$ as
 \begin{equation}
-    P = \tau_c\left(\left(u_c^{\frac{1}{m} + 1} + |u|^{\frac{1}{m} + 1}\right)^{\frac{m}{m + 1}} - u_c\right).
+    u_c = C^{-m}\tau_c^m.
 \end{equation}
+The power dissipation density for the Schoof-type sliding law that we use is
+\begin{equation}
+    P = \tau_c\left\{\left(u_c^{\frac{1}{m} + 1} + |u|^{\frac{1}{m} + 1}\right)^{\frac{m}{m + 1}} - u_c\right\}
+    \label{eq:power-dissipation-modified-schoof-sliding}
+\end{equation}
+Figure \ref{fig:sliding-laws} shows a comparison of the original Schoof sliding law and the sliding law that arises as the derivative of the functional in equation \eqref{eq:power-dissipation-modified-schoof-sliding}.
+The two have the same asymptotic behavior when the speed is much smaller or much larger than the critical speed; they differ in a relatively small range around the critical speed.
+The relative difference in basal shear stress between the two sliding laws is less than 10\% throughout the entire range.
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/sliding/sliding-law.png}
+    \caption{The Weertman, Schoof, and modified Schoof sliding law of equation \eqref{eq:power-dissipation-modified-schoof-sliding}.
+    The critical speed and shear stress are $u_c = 250$ m/year and $\tau_c = 100$ kPa.}
+    \label{fig:sliding-laws}
+\end{figure}
+
 A sample of the source code implementing both of these approaches is shown in \textcolor{red}{Figure X}.
 To change the sliding law, users only need to pass one function or the other to the model object at initialization.
 Users do not need to implement a subclass that overrides some parent method.
