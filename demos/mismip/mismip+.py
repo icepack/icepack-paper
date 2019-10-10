@@ -10,20 +10,26 @@ import icepack, icepack.models, icepack.plot
 parser = argparse.ArgumentParser()
 parser.add_argument('--verbose', action='store_true')
 parser.add_argument('--input')
-parser.add_argument('--output', default='result')
+parser.add_argument('--output')
+parser.add_argument('--input-level', type=int, default=0, dest='input_level')
+parser.add_argument('--output-level', type=int, default=0, dest='output_level')
 parser.add_argument('--melt', action='store_true')
 parser.add_argument('--time', type=float, default=4e3)
 parser.add_argument('--timestep', type=float, default=1.0)
 
 args = parser.parse_args()
+if args.output_level < args.input_level:
+    raise ValueError('Output level must be >= input level!')
 
 # Create the mesh and function spaces
 Lx, Ly = 640e3, 80e3
-ny = 40
+ny = 20
 nx = int(Lx/Ly) * ny
-mesh = firedrake.RectangleMesh(nx, ny, Lx, Ly)
-area = firedrake.assemble(Constant(1) * dx(mesh))
+area = Lx * Ly
 
+coarse_mesh = firedrake.RectangleMesh(nx, ny, Lx, Ly)
+mesh_hierarchy = firedrake.MeshHierarchy(coarse_mesh, args.output_level)
+mesh = mesh_hierarchy[args.output_level]
 Q = firedrake.FunctionSpace(mesh, family='CG', degree=1)
 V = firedrake.VectorFunctionSpace(mesh, family='CG', degree=1)
 
@@ -69,17 +75,39 @@ def friction(u, h, s, C):
 
     return τ_c * ((u_c**(1/m + 1) + u_b**(1/m + 1))**(m / (m + 1)) - u_c) * dx
 
+# Create the model object and extra options
 model = icepack.models.IceStream(friction=friction)
 opts = {'dirichlet_ids': [1], 'side_wall_ids': [3, 4], 'tol': 1e-8}
 
-# Read in the input data if there is any
+# Read the input data if there is any
 if args.input:
-    h0 = firedrake.Function(Q)
-    u0 = firedrake.Function(V)
+    if args.input_level < args.output_level:
+        input_mesh = mesh_hierarchy[args.input_level]
+        Q_in = firedrake.FunctionSpace(input_mesh, family='CG', degree=1)
+        V_in = firedrake.VectorFunctionSpace(input_mesh, family='CG', degree=1)
+    else:
+        Q_in = Q
+        V_in = V
+
+    h_in = firedrake.Function(Q_in)
+    u_in = firedrake.Function(V_in)
+
     input_name = os.path.splitext(args.input)[0]
-    chk = firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ)
-    chk.load(h0, name='h')
-    chk.load(u0, name='u')
+    with firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ) as chk:
+        chk.load(h_in, name='h')
+        chk.load(u_in, name='u')
+
+    if args.input_level < args.output_level:
+        # Prolong the input data to the output function space
+        h0 = firedrake.Function(Q)
+        u0 = firedrake.Function(V)
+
+        firedrake.prolong(h_in, h0)
+        firedrake.prolong(u_in, u0)
+    else:
+        h0 = h_in
+        u0 = u_in
+
 # Otherwise create some rough initial data
 else:
     h0 = interpolate(Constant(100), Q)

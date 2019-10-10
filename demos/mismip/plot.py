@@ -5,14 +5,17 @@ import icepack.plot
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--input')
+parser.add_argument('--level', type=int)
 parser.add_argument('--output')
 
 args = parser.parse_args()
 
 Lx, Ly = 640e3, 80e3
-ny = 40
+ny = 20
 nx = int(Lx/Ly) * ny
-mesh = firedrake.RectangleMesh(nx, ny, Lx, Ly)
+coarse_mesh = firedrake.RectangleMesh(nx, ny, Lx, Ly)
+mesh_hierarchy = firedrake.MeshHierarchy(coarse_mesh, args.level)
+mesh = mesh_hierarchy[args.level]
 
 Q = firedrake.FunctionSpace(mesh, family='CG', degree=1)
 V = firedrake.VectorFunctionSpace(mesh, family='CG', degree=1)
