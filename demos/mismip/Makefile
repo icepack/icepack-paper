@@ -1,6 +1,6 @@
 export mismip ?= .
 
-FIGURES += $(mismip)/steady-state.png $(mismip)/retreated.png
+FIGURES += $(mismip)/steady-state.png $(mismip)/retreated.png $(mismip)/readvanced.png
 
 SCRIPT := $(mismip)/mismip+.py
 
@@ -29,7 +29,13 @@ $(mismip)/retreated.h5: $(mismip)/steady-state.h5 $(SCRIPT)
 	python3 $(SCRIPT) --verbose \
 	    --output $@ --output-level 3 \
 	    --input $< --input-level 3 \
-	    --time 100 0.04166666666666666 --melt
+	    --time 100 --timestep 0.04166666666666666 --melt
+
+$(mismip)/readvanced.h5: $(mismip)/retreated.h5 $(SCRIPT)
+	python3 $(SCRIPT) --verbose \
+	    --output $@ --output-level 3 \
+	    --input $< --input-level 3 \
+	    --time 100 --timestep 0.04166666666666666
 
 $(mismip)/%.png: $(mismip)/%.h5 $(mismip)/plot.py
 	python3 $(mismip)/plot.py --input $< --level 3 --output $@
