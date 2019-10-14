@@ -105,6 +105,40 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
 
 \section{Physics}
 
+\begin{table}[h]
+    \begin{tabular}{l|l}
+        Symbol & Meaning \\
+        \hline
+        $h$ & thickness \\
+        $b$ & bed elevation  \\
+        $s$ & surface elevation  \\
+        $d$ & water depth \\
+        $u$ & velocity \\
+        $\dot a_s$ & surface mass balance \\
+        $\dot a_b$ & basal mass balance \\
+        $\dot\varepsilon$ & strain rate \\
+        $C$ & bed friction coefficient \\
+        $A$ & rheology coefficient \\
+        $\nu$ & unit outward normal \\
+        $J$ & action functional
+    \end{tabular}
+    \caption{Mathematical symbols}
+\end{table}
+
+\begin{table}[h]
+    \begin{tabular}{l|l}
+        Symbol & Meaning \\
+        \hline
+        $n$ & Glen's flow law exponent \\
+        $m$ & Weertman sliding law exponent \\
+        $\rho_I$ & ice density \\
+        $\rho_W$ & seawater density \\
+        $g$ & gravitational acceleration
+    \end{tabular}
+    \caption{Physical constants}
+\end{table}
+
+
 \subsection{Mass transport}
 
 The PDE describing how the ice thickness changes in time is a conservative advection equation:
@@ -165,6 +199,30 @@ Minimizing a convex action functional is vastly more convenient numerically than
 \subsubsection{\textcolor{green}{Shallow ice approximation}}
 
 \subsubsection{Shallow stream approximation}
+
+The shallow stream model can be derived from the Blatter-Pattyn approximation by assuming nearly plug flow, i.e. $\partial u/\partial z \ll \partial u/\partial x$.
+In this case, the momentum equation can be vertically integrated to obtain a 2D system of equations.
+The terms in the action functional are:
+\begin{align}
+    \text{viscosity} & = \frac{n}{n + 1}\int_\Omega hA^{-\frac{1}{n}}|\dot\varepsilon(u)|^{\frac{1}{n} + 1}\ud x \\
+    \text{friction} & = \frac{m}{m + 1}\int_\Omega C|u|^{\frac{1}{m} + 1}\ud x \\
+    \text{gravity} & = -\int_\Omega\rho_I gh\nabla s\cdot u\ud x \\
+    \text{terminus} & = \frac{1}{2}\int_\Gamma(\rho_I gh^2 - \rho_Wgd^2)u\cdot \nu\ud\gamma
+\end{align}
+and the action functional is
+\begin{equation}
+    J = \text{viscosity} + \text{friction} - \text{gravity} - \text{terminus}.
+\end{equation}
+When the ice is floating, there are two simplifications: the friction coefficient $C$ is 0, and the surface elevation $s$ can be written in terms of the thickness $h$ as
+\begin{equation}
+    s = (1 - \rho_I / \rho_W)h.
+\end{equation}
+Using integration by parts, the terminus component can be eliminated completely.
+
+Several studies have compared the shallow stream approximation to higher-order models, such as Blatter-Pattyn or full Stokes \textcolor{red}{cite the MIPs}.
+The most appreciable difference between lower- and higher-order models occurs near the glacier grounding line, where the full Stokes equations can represent bridging stresses \textcolor{red}{cite van der Veen}.
+The shallow stream approximation is warranted for studying individual fast-flowing glaciers where the concern is more with studying processes and responses than with complete accuracy.
+
 
 \subsection{Hybrid model} \label{sec:physics-hybrid-model}
 
@@ -292,7 +350,7 @@ The user only needs to know the argument names, which are chosen to agree with w
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case and not universal.
 For example, in defining a bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance.
-In that case using positional arguments would better correspond with the underlying problem.
+In this case, positional arguments correspond better with the semantics of the problem.
 
 One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
 Since many aspects of glacier flow are not understood completely, we view extensibility as an essential requirement for any software package in this domain.
@@ -380,16 +438,16 @@ The action functional for each diagnostic model is convex, i.e. the second deriv
 From a theoretical persepctive, convexity guarantees that the problem has a unique solution.
 This property is also especially advantageous for implementing numerical solvers.
 We use a damped Newton method to solve the diagnostic equations.
-Starting from a guess $u_k$ for the velocity, one first computed a \emph{search direction} $v_k$ that solves a linear equation:
+Starting from a guess $u_k$ for the velocity, the \emph{search direction} $v_k$ is the unique solution of the linear system
 \begin{equation}
     \ud^2J(u_k)\cdot v_k = -\ud J(u_k).
     \label{eq:newton-search-direction}
 \end{equation}
-The next value of the velocity is then computed by searching along $v_k$:
-\begin{equation}
-    u_{k + 1} = u_k + \alpha_k\cdot v_k,
-\end{equation}
-where $\alpha$ is chosen to minimize $J$ along the search direction.
+The next approximation for the velocity minimizes $J$ along the search direction $v_k$ starting from $u_k$, i.e.
+\begin{align}
+    u_{k + 1} & = u_k + \alpha_k\cdot v_k, \nonumber\\
+    \alpha_k & = \text{argmin}_\alpha \hspace{2pt}J(u_k + \alpha v_k).
+\end{align}
 For an initial guess sufficiently close to the exact solution, the undamped Newton method ($\alpha_k = 1$ at every step) converges quadratically.
 The line search step ensures that the method can converge even from a poor initial guess, provided that the line search method satisfies the Armijo-Wolfe criteria \citep{nocedal2006numerical}.
 
@@ -411,7 +469,7 @@ By contrast, a damped Newton procedure using a line search that satisfies the Ar
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
 
-Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation, but few if any have considered the problem of when to stop iterating.
+Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation \textcolor{red}{cite -- I think Mathieu and Dan did this}, but few if any have considered the problem of when to stop iterating.
 The most common stopping criteria are when (1) the 2-norm of the residual is sufficiently small or (2) the relative change in the iterates is sufficiently small.
 Each of these approaches has problems.
 The residual norm depends on the discretization and does not weight all degrees of freedom proportionally, e.g. vertex and edge degrees of freedom in higher-order finite element methods.
@@ -573,7 +631,7 @@ The MISMIP+ experiment has three phases.
 First, the model must find a steady state marine ice sheet with a fixed accumulation rate and no submarine melting.
 Next, submarine melting with a given depth-dependent parameterization is applied for 100 years.
 The increased melt thins the ice ice shelf and initiates a retreat of the glacier grounding line.
-Finally, submarine melting is turned off for at least 200 years, optionally longer.
+Finally, submarine melting is turned off for at least 100 years, optionally longer.
 The grounding line then readvances, but not as far as its original position.
 
 The original intercomparison project specified that participants could use the Weertman sliding law (equation \eqref{eq:weertman-sliding}) as well as two other sliding laws that transition to a more plastic rheology at high sliding speeds.
