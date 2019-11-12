@@ -690,17 +690,40 @@ The numerical advantages of using variational principles are so great, however, 
 
 \subsection{Larsen C Ice Shelf}
 
-To demonstrate the forward and inverse modeling capabilities of icepack, we will estimate the rheology of the Larsen C Ice Shelf in the Antarctic Peninsula from observational data and project the model forward by 10 years.
+To demonstrate the inverse solver, we will estimate the rheology of the Larsen C Ice Shelf in the Antarctic Peninsula from observational data.
 Several recent studies have focused on Larsen C because it may be unstable in the warmer climate of the coming decades.
 From January to March of 2002, the neighboring Larsen B Ice Shelf disintegrated due to surface melt pond-induced fracture \textcolor{red}{check that this is the currently-accepted explanation and cite}, and this mechanism could also lead to the breakup of Larsen C.
 One of the key factors affecting the stability of ice shelves is the presence of marine ice -- seawater that freezes onto the base of an ice shelf -- in the suture zones where two flow units meet \citep{kulessa2014marine}.
 Marine ice is warmer than meteoric ice and usually includes brine pockets, which are discernible in radio echo sounding measurements as the absence of reflection from the ice shelf base \citep{holland2009marine}.
 This warmer and impurity-laden ice is more ductile and thus less prone to fracture than cold and brittle meteoric ice.
 Ocean models predict that marine ice forms under Larsen C as well \citep{holland2009marine}.
-By estimating the material hardness or rheology of an ice shelf, we can constrain where marine ice may be forming.
+By estimating the material rigidity of an ice shelf, we can constrain where marine ice may be forming.
 
 
 \subsubsection{Data}
+
+We used the InSAR phase-based ice velocity map from \citet{mouginot2019continent}.
+This dataset has nominal errors over the Larsen Ice Shelf between \textcolor{red}{find it}.
+We used the recently-released BedMachine map of the thickness of Antarctica \citep{morlighem2019deep}.
+This data product improves on existing thickness maps for the continent by using the mass conservation law, together with measurements of the velocity, surface elevation, and surface mass balance, to improve thickness estimates where few measurements are available.
+
+Existing work on glaciological inverse problems uses the mismatch between the computed and observed velocity fields as part of the objective functional.
+The effect of thickness errors is studied largely through a posteriori validation \citep{joughin2004basal, larour2005rheology}.
+Errors in thickness or surface slope can be large enough that it might be impossible to fit the velocity measurements to the degree that statistical theory predicts \citep{macayeal1995basal}.
+The velocity measurements themselves might have significant outliers, in which case using the usual weighted sum of squared misfits as an error metric will give poor results.
+For these reasons, some studies have explored alternative objective functionals \citep{morlighem2010spatial}.
+We have opted to use the regularized $L^1$-type error metric
+\begin{equation}
+    E(u - u^o) = \int_\Omega\left(\sqrt{\frac{|u - u^o|^2}{\sigma^2} + \gamma^2} - \gamma\right)\ud x.
+    \label{eq:l1-error-metric}
+\end{equation}
+This error metric approaches the usual weighted sum of squared errors as $\gamma \to \infty$, and approaches the sparsity-promoting $L^1$ error metric as $\gamma \to 0$.
+For finite, positive values of $\gamma$ this error metric is robust to non-normality or a small fraction of outliers \citep{barron2019general}.
+
+\citet{adusumilli2018variable} used surface elevation measurements from multiple satellite altimeters, together with firn density estimates from a climate model and tide height estimates, to compile a time series of ice thickness change over the Larsen Ice Shelf for the past 23 years.
+This same approach can be used to derive an improved estimate the thickness of the ice shelf from, e.g. the REMA surface elevation dataset.
+Future work will focus on this and other methods to assimilate more accurate thickness data and to explicitly account for the statistical errors in this field.
+
 
 \subsubsection{Parameterization}
 
@@ -709,7 +732,7 @@ The optimization algorithm, however, can explore unphysical regions of parameter
 Rather than try to solve an inequality-constrained problem, most studies in glaciology instead re-parameterize the problem in terms of some auxiliary field in such a way that the rheology is manifestly positive.
 In this case we will use the parameterization
 \begin{equation}
-    B = B_0e^{\theta}
+    A = A_0e^{\theta}
 \end{equation}
 and estimate $\theta$.
 The inverse solver calculates the derivative of the objective functional symbolically and is thus agnostic to the particular parameterization.
@@ -717,6 +740,24 @@ The only information that the user needs to pass is the name of the arguments to
 
 
 \subsubsection{Results}
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/larsen/parameter.png}
+    \caption{Left: Inferred fluidity parameter $\theta$.
+    Lower values indicate more deformable ice.
+    Right: stream plot of ice velocity computed from this fluidity parameter.}
+    \label{fig:larsen}
+\end{figure}
+
+The inferred parameter field $\theta$ is shown in figure \ref{fig:larsen}.
+The algorithm detects areas of much lower ice rigidity around highly damaged ice.
+This feature is especially apparent around the large rift emanating from the Gipps Ice Rise, as well as the crevassed areas upstream.
+We find other areas of low rigidity in the suture zones where two flow units converge and where marine ice tends to form, releasing heat to the ice shelf, exactly as observed in \citet{holland2009marine}.
+Finally, the inferred rheology field reproduces features that have already been found in previous studies of Larsen C Ice Shelf \citep{khazendar2011acceleration}.
+
+The final value of the model-data misfit \eqref{eq:l1-error-metric} matches the value we would expect if the velocity errors actually came from this probability distribution.
+In a separate computational experiment, we used the older bedmap2 ice thickness map instead of BedMachine \citep{fretwell2013bedmap2}.
+We were unable to achieve the same model-data misfit using bedmap2 at the same grid resolution with any regularization parameter.
 
 
 \section{Usability}
