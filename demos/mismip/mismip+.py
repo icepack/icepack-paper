@@ -151,6 +151,6 @@ for step in range(num_steps):
 
 # Write out the results
 output_name = os.path.splitext(args.output)[0]
-chk = firedrake.DumbCheckpoint(output_name, mode=firedrake.FILE_CREATE)
-chk.store(h, name='h')
-chk.store(u, name='u')
+with firedrake.DumbCheckpoint(output_name, mode=firedrake.FILE_CREATE) as chk:
+    chk.store(h, name='h')
+    chk.store(u, name='u')
