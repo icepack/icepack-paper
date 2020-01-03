@@ -8,6 +8,10 @@ __pycache__/
 ## Model output
 *.h5
 
+## Meshes
+*.geo
+*.msh
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
