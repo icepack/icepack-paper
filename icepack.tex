@@ -724,6 +724,7 @@ The only information that the user needs to pass is the name of the arguments to
 One of the main goals for icepack is to create a tool that is accessible to researchers who might not be experts in scientific computing.
 Previous work on numerical modeling of glacier flow has focused largely on technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory, does it scale to large numbers of processors, can models accurately predict grounding line retreat, etc.
 The fallible human learning to use the model is largely absent from the discussion.
+For graduate students or other researchers who are not experts in computational physics, the difficulty of learning to use a particular modeling tool may be more of a rate-limiting factor than the speed or efficiency of the model.
 
 The field of \emph{human-computer interaction} (HCI) asks how we can design software that is easiest to learn and use effectively.
 In the following, we will describe some of the design choices in icepack and how they relate to what HCI researchers call the \emph{cognitive dimensions of notations}.
@@ -743,15 +744,19 @@ The code cells can be executed one-at-a-time and this enables users to insert di
 Most importantly, the notebook format also integrates the plotting library matplotlib so that figures created in each cell appear directly beneath that cell as it is executed.
 The ability to visualize the current state of the simulation at every step is a powerful tool for debugging and sanity-checking.
 \textcolor{red}{Picture of an executed jupyter notebook.}
-Finally, a Jupyter notebook and the accompanying plots can be rendered into HTML and published using the tool \texttt{nbconvert}.
+The interface for icepack also supports inspection of partial results in other ways.
+Running a simulation amounts to writing a loop that alternates prognostic and diagnostic solves.
+Users can add arbitrary code to this loop for sanity checking or feedback on progress, or they can manually step through the simulation one iteration at a time.
+Other packages only support a more coarse-grained view.
+The user specifies the starting and ending time of a simulation, and the degree of feedback is hard-coded into the package itself.
+
 
 \textbf{Abstraction gradient: What are the levels of abstraction exposed by the library?
 Can irrelevant details be hidden?}
-The API for icepack has been designed so that the user only needs to make decisions about what problem they wish to solve and not how to solve it.
-Where a choice concerns more the ``how'' than the ``what'', a sensible default has been chosen.
-Moreover, the default behavior we choose always biases for correctness rather than speed.
+The API for icepack has been designed so that the users only need to decide what problem to solve and not how to solve it.
+Where a choice does concern more the ``how'' than the ``what'', we use a sensible default that biases for correctness rather than speed.
 For example, the Newton solver uses a direct factorization method to solve the linear system for the search direction because factorization requires no tuning whereas iterative methods do.
-A user interested in achieving greater runtime performance can pass additional keyword arguments instead specifying, say, the conjugate gradient method.
+A user interested in achieving greater runtime performance can pass additional keyword arguments instead specifying, say, the preconditioned conjugate gradient method.
 This choice is of interest mostly to advanced users so we keep the linear solver method as a default argument.
 In so doing, we avoid confronting novice users with options that they might not understand.
 
