@@ -2,13 +2,15 @@ import os
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import tqdm
+from mpi4py import MPI
 import firedrake
-from firedrake import (inner, dx, Constant, interpolate, as_vector, exp, sqrt,
-                       max_value)
-import icepack, icepack.models, icepack.plot
+from firedrake import (
+    inner, dx, Constant, interpolate, as_vector, exp, sqrt, max_value
+)
+import icepack, icepack.plot
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--verbose', action='store_true')
 parser.add_argument('--input')
 parser.add_argument('--output')
 parser.add_argument('--input-level', type=int, default=0, dest='input_level')
@@ -62,9 +64,16 @@ A = Constant(20)
 C = Constant(1e-2)
 
 # Create the bed friction dissipation functional
-from icepack.constants import (ice_density as ρ_I, water_density as ρ_W,
-                               gravity as g, weertman_sliding_law as m)
-def friction(u, h, s, C):
+from icepack.constants import (
+    ice_density as ρ_I,
+    water_density as ρ_W,
+    gravity as g,
+    weertman_sliding_law as m
+)
+
+def friction(**kwargs):
+    u, h, s, C = map(kwargs.get, ('velocity', 'thickness', 'surface', 'friction'))
+
     p_W = ρ_W * g * max_value(0, -(s - h))
     p_I = ρ_I * g * h
     N = p_I - p_W
@@ -73,11 +82,12 @@ def friction(u, h, s, C):
     u_c = (τ_c / C)**m
     u_b = sqrt(inner(u, u))
 
-    return τ_c * ((u_c**(1/m + 1) + u_b**(1/m + 1))**(m / (m + 1)) - u_c) * dx
+    return τ_c * ((u_c**(1/m + 1) + u_b**(1/m + 1))**(m / (m + 1)) - u_c)
 
 # Create the model object and extra options
 model = icepack.models.IceStream(friction=friction)
-opts = {'dirichlet_ids': [1], 'side_wall_ids': [3, 4], 'tol': 1e-8}
+opts = {'dirichlet_ids': [1], 'side_wall_ids': [3, 4], 'tolerance': 1e-8}
+solver = icepack.solvers.FlowSolver(model, **opts)
 
 # Read the input data if there is any
 if args.input:
@@ -111,13 +121,19 @@ if args.input:
 # Otherwise create some rough initial data
 else:
     h0 = interpolate(Constant(100), Q)
-    s0 = model.compute_surface(h=h0, b=z_b)
-    u0 = model.diagnostic_solve(u0=interpolate(as_vector((35 * x / Lx, 0)), V),
-                                h=h0, s=s0, A=A, C=C, **opts)
+    s0 = icepack.compute_surface(h=h0, b=z_b)
+    u0 = solver.diagnostic_solve(
+        velocity=interpolate(as_vector((35 * x / Lx, 0)), V),
+        thickness=h0,
+        surface=s0,
+        fluidity=A,
+        friction=C
+    )
 
 h = h0.copy(deepcopy=True)
-s = model.compute_surface(h=h, b=z_b)
+s = icepack.compute_surface(h=h, b=z_b)
 u = u0.copy(deepcopy=True)
+a = firedrake.Function(Q)
 
 # Accumulation and melt rate
 accumulation = Constant(0.3)
@@ -132,22 +148,31 @@ h_c0 = Constant(75.0)   # cut-off water column thickness
 # Run the simulation
 δt = args.timestep
 num_steps = int(args.time / δt)
-for step in range(num_steps):
+
+trange = tqdm.trange(num_steps)
+for step in trange:
     z_d = s - h             # elevation of the ice base
     h_c = z_d - z_b         # water column thickness
     melt = Ω * tanh(h_c / h_c0) * max_value(z_0 - z_d, 0)
-    a = accumulation - melt
+    a.interpolate(accumulation - melt)
 
-    h = model.prognostic_solve(δt, h0=h, u=u, a=a, h_inflow=h0)
-    s = model.compute_surface(h=h, b=z_b)
-    u = model.diagnostic_solve(u0=u, h=h, s=s, A=A, C=C, **opts)
+    h = solver.prognostic_solve(
+        δt, thickness=h, velocity=u, accumulation=a, thickness_inflow=h0
+    )
+    s = icepack.compute_surface(thickness=h, bed=z_b)
 
-    if args.verbose:
-        time = step * δt
-        avg_thickness = firedrake.assemble(h * dx) / area
-        min_thickness = h.dat.data_ro.min()
-        max_thickness = h.dat.data_ro.max()
-        print(time, avg_thickness, min_thickness, max_thickness, flush=True)
+    u = solver.diagnostic_solve(
+        velocity=u,
+        thickness=h,
+        surface=s,
+        fluidity=A,
+        friction=C
+    )
+
+    min_thickness = firedrake.COMM_WORLD.allreduce(h.dat.data_ro.min(), MPI.MIN)
+    avg_thickness = firedrake.assemble(h * dx) / area
+    msg = f"avg/min thickness: ({avg_thickness:4.2f}, {min_thickness:4.2f})"
+    trange.set_description(msg)
 
 # Write out the results
 output_name = os.path.splitext(args.output)[0]
