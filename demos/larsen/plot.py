@@ -10,7 +10,6 @@ import icepack.datasets, icepack.plot
 parser = argparse.ArgumentParser()
 parser.add_argument('--mesh')
 parser.add_argument('--input')
-parser.add_argument('--level', type=int, default=0)
 parser.add_argument('--output')
 args = parser.parse_args()
 
@@ -51,21 +50,18 @@ def subplots(*args, **kwargs):
 
     return fig, axes
 
-level = args.level
-coarse_mesh = firedrake.Mesh(args.mesh)
-mesh_hierarchy = firedrake.MeshHierarchy(coarse_mesh, level)
-mesh = mesh_hierarchy[level]
+mesh = firedrake.Mesh(args.mesh)
 
-Q = firedrake.FunctionSpace(mesh, family='CG', degree=1)
-V = firedrake.VectorFunctionSpace(mesh, family='CG', degree=1)
+Q = firedrake.FunctionSpace(mesh, family='CG', degree=2)
+V = firedrake.VectorFunctionSpace(mesh, family='CG', degree=2)
 
 θ = firedrake.Function(Q)
 u = firedrake.Function(V)
 
 input_name = os.path.splitext(args.input)[0]
 with firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ) as chk:
-    chk.load(θ, name='θ')
-    chk.load(u, name='u')
+    chk.load(θ, name='log_fluidity')
+    chk.load(u, name='velocity')
 
 fig, axes = subplots(ncols=2, sharex=True, sharey=True)
 
