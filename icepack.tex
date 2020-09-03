@@ -76,7 +76,7 @@ Several glacier flow models already exist and are effective in the hands of expe
 These models are usually written in compiled programming languages such as C, C++, and Fortran, which afford an unsurpassed degree of computational speed.
 Many researchers in glaciology, however, receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
 The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for using numerical models to glaciologists who are not experts in modeling as such.
-We wanted to make a tool that would be accessible also to non-experts.
+We wanted to make a tool that would be both accessible to non-experts and useful for experts.
 
 \textcolor{red}{We focus in this paper only on novel aspects of icepack that differ substantially from existing packages.}
 
@@ -447,6 +447,48 @@ The resulting coefficient is then used as the initial guess with higher degree v
 
 
 \section{Usability}
+
+One of the main goals for icepack was to create a tool that is accessible to researchers who might not be experts in scientific computing.
+Previous work on numerical modeling of glacier flow has focused largely on technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory, does it scale to large numbers of processors, can models accurately predict grounding line retreat, etc.
+The fallible human learning to use the model is largely absent from the discussion.
+
+The field of \emph{human-computer interaction} (HCI) asks how we can design software that is easiest to learn and use effectively.
+In the following, we will describe some of the design choices in icepack and how they relate to what HCI researchers call the \emph{cognitive dimensions of notations}.
+\citet{green1996usability} introduced this concept to assess the usability of visual programming languages, but the criteria they laid out in this paper have been used to analyze software systems across many disciplines.
+
+\textbf{Consistency: After a user learns part of the software, can they guess the remaining parts?}
+Each of the model objects in icepack is a class with a method ending in \texttt{solve} that takes in keyword arguments for the various input fields and options for things like boundary conditions.
+Users already familiar with, say, the \texttt{IceStream} class can then use the \texttt{HeatTransport} class under the assumption that the input fields -- the current temperature $T$, ice velocity $u$, and basal melt rate $m$ -- are passed as keyword arguments with the same name as the fields themselves.
+This obviates the need for consulting the documentation or examples.
+
+\textbf{Progressive evaluation: How easily can users get feedback during their use of the software?}
+Progressive evaluation is the main advantage of having a user interface in Python or another interpreted language, as opposed to using compiled programs that must run all at once.
+Icepack includes a suite of demos that demonstrate all of the main functions of the package.
+These demos are formatted as Jupyter notebooks, a document format that includes code, figures, and explanatory text with typeset mathematics that can be run interactively in a web browser \citep{kluyver2016jupyter}.
+A notebook is a sequence of cells, each of which consists of either code or text.
+The code cells can be executed one-at-a-time and this enables users to insert diagnostics in each cell as they go.
+Most importantly, the notebook format also integrates the plotting library matplotlib so that figures created in each cell appear directly beneath that cell as it is executed.
+The ability to visualize the current state of the simulation at every step is a powerful tool for debugging and sanity-checking.
+\textcolor{red}{Picture of an executed jupyter notebook.}
+Finally, a Jupyter notebook and the accompanying plots can be rendered into HTML and published using the tool \texttt{nbconvert}.
+
+\textbf{Abstraction gradient: What are the levels of abstraction exposed by the library?
+Can irrelevant details be hidden?}
+The API for icepack has been designed so that the user only needs to make decisions about what problem they wish to solve and not how to solve it.
+Where a choice concerns more the ``how'' than the ``what'', a sensible default has been chosen.
+Moreover, the default behavior we choose always biases for correctness rather than speed.
+For example, the Newton solver uses a direct factorization method to solve the linear system for the search direction because factorization requires no tuning whereas iterative methods do.
+A user interested in achieving greater runtime performance can pass additional keyword arguments instead specifying, say, the conjugate gradient method.
+This choice is of interest mostly to advanced users so we keep the linear solver method as a default argument.
+In so doing, we avoid confronting novice users with an option that they might not understand.
+
+Advanced users who wish to tune solver performance for large simulations will need some way to make choices about algorithms.
+For example, a more advanced user might choose the GMRES iterative solver together with an incomplete LU preconditioner to solve linear systems.
+The solver classes, as opposed to the model classes, provide the interface for making these kinds of algorithmic choices.
+While alternative solvers might offer faster runtime performance than direct factorization, they also requires making additional choices choices -- how often to restart GMRES?
+How much fill-in to allow in the incomplete factorization?
+Many glaciologists might not have the background in computational science to know that adjusting these parameters could make the difference between solver convergence or breakdown.
+\textcolor{red}{Also stabilization of the Stokes equations.}
 
 
 \section{Discussion}
