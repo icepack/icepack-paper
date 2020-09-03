@@ -13,11 +13,11 @@ import icepack, icepack.plot
 parser = argparse.ArgumentParser()
 parser.add_argument('--input')
 parser.add_argument('--output')
-parser.add_argument('--input-level', type=int, default=0, dest='input_level')
-parser.add_argument('--output-level', type=int, default=0, dest='output_level')
+parser.add_argument('--input-level', type=int, default=0)
+parser.add_argument('--output-level', type=int)
 parser.add_argument('--melt', action='store_true')
-parser.add_argument('--time', type=float, default=4e3)
-parser.add_argument('--timestep', type=float, default=1.0)
+parser.add_argument('--time', type=float)
+parser.add_argument('--timestep', type=float)
 
 args = parser.parse_args()
 if args.output_level < args.input_level:
