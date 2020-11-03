@@ -164,7 +164,8 @@ Elmer/Ice, on the other hand, solves a contact problem for the moving upper and 
 
 There are three diagnostic models implemented in icepack.
 The \emph{shallow ice approximation} (SIA) and \emph{shallow stream approximation} (SSA) are 2D models describing the depth-averaged velocity of ice flow, while the \emph{first-order} or \emph{Blatter-Pattyn} approximation is a 3D model describing the horizontal velocity (termed the \emph{hybrid model} in icepack) \citep{blatter1995velocity, pattyn2003new}.
-The SIA model \citep{hutter1981effect} describes the interior of ice sheets well, where flow can be simply described as bed-parallel shear and surface and basal slopes are small. This approximation does not apply well near ice divides, where vertical velocities dominate, and near ice margins, where basal sliding can be a large fraction of the surface speed. 
+The SIA model \citep{hutter1981effect} describes the interior of ice sheets well, where flow can be simply described as bed-parallel shear and surface and basal slopes are small.
+This approximation breaks down near ice divides, where vertical velocities dominate, and near ice margins, where basal sliding can be a large fraction of the surface speed.
 The SSA model describes the fast-flowing margins of the ice sheet best, encompassing grounded ice streams or floating ice shelves \citep{macayeal1989large}.
 This model is appropriate where the sliding velocity is close to the surface velocity, or in other words where the ice is nearly in plug flow.
 Plug flow is a good approximation in fast-flowing ice streams and outlet glaciers near the margins of an ice sheet, but deep in the interior the flow is mostly by vertical shear.
@@ -196,29 +197,29 @@ Minimizing a convex action functional is vastly more convenient numerically than
 
 \subsubsection{Shallow ice approximation}
 
-The shallow ice model can be derived from the Blatter-Pattyn approximation by assuming the ice flow is dominated by bed-parallel shear and that surface and basal slopes are small, i.e. $\partial u/\partial x \ll \partial u/\partial z$. The result is a 2D system of equations for depth-averaged horizontal velocity. The terms in the action functional are:
-
+The shallow ice model can be derived from the Blatter-Pattyn approximation by assuming the ice flow is dominated by bed-parallel shear and that surface and basal slopes are small, i.e. $\partial u/\partial x \ll \partial u/\partial z$.
+The result is a 2D system of equations for depth-averaged horizontal velocity.
+The terms in the action functional are:
 \begin{align}
     \text{mass} & =\frac{1}{2}\int_\Omega u\cdot u\ud x\\\
-    \text{gravity} & = \int_\Omega\frac{2A(\varrho_I g)^n}{n+2} (\nabla h^2\cdot u) h^{n+1} \nabla s^{n-1}\ud x\\
-    \text{penalty} & = \frac{1}{2}\int_\Omega l^2\nabla u\cdot \nabla u\ud x 
+    \text{gravity} & = \int_\Omega\frac{2A(\rho_I g)^n}{n+2} h^{n + 1}|\nabla s|^{n - 1}\nabla s\cdot u\ud x\\
+    \text{penalty} & = \frac{1}{2}\int_\Omega \ell^2\nabla u\cdot \nabla u\ud x
 \end{align}
-
-where 
-
-\begin{equation}
-l = 2 \text{ max}(\text{cell diameter}, 5h)
-\end{equation}
-
 and the action fuctional is
-
 \begin{equation}
     J = \text{mass} + \text{gravity} + \text{penalty}.
 \end{equation}
+The default value of the length scale $\ell$ in the penalty term is defined as:
+\begin{equation}
+    \ell = 2\max\{\text{cell diameter}, 5h\}
+\end{equation}
+but users can adjust this to the value of their choice.
+This penalty term smooths over numerical artifacts, especially near the ice margins and termini.
+In these regions the shallow ice approximation is less applicable, so the error in solving a different set of equations is small compared to the inherent modeling error in using these equations in the first place.
 
-We have included an additional penalty term, which helps alleviate numerical artifacts, especially near the ice margins and termini where the shallow ice approximation is less applicable.
-
-The shallow ice approximation applies well in ice-sheet interiors. For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \textcolor{red}{cite}. Caution must be taken, however, because areas of the ice sheet that experience high vertical velocities (e.g., ice divides) or plug flow (e.g., ice streams) are not well represented by this approximation.
+The shallow ice approximation applies well in ice-sheet interiors.
+For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \textcolor{red}{cite}.
+Caution must be taken, however, because areas of the ice sheet that experience high vertical velocities (e.g., ice divides) or plug flow (e.g., ice streams) are not well represented by this approximation.
 
 \subsubsection{Shallow stream approximation}
 
@@ -248,8 +249,8 @@ The shallow stream approximation is warranted for studying individual fast-flowi
 
 \subsection{Hybrid model} \label{sec:physics-hybrid-model}
 
-The shallow ice and shallow stream models in icepack are completely standard. \textcolor{red}{JB: Aren't the models in icepack based on variational principles? This sentence and the next suggest that only the hybrid model is based on variational principles.}
-The hybrid flow model that we describe here is based on variational principles, terrain-following coordinates, and vertical spectral methods.
+The shallow ice and shallow stream models in icepack follow directly from the variational principles described above.
+The hybrid flow model, while also based on a variational principle, uses two more tricks: terrain-following coordinates and vertical spectral methods.
 Each of these methods has appeared in the literature on glacier modeling before but never all in the same place for a 3D model.
 \citet{langdon1978numerical} and \cite{bassis2010hamilton} used variational principles and vertical spectral methods, but these works considered only flowband and not 3D models.
 \citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
@@ -285,7 +286,8 @@ where $\otimes$ is the tensor product of two vectors.
 For the Stokes equations, this alternative coordinate system also helps avoid the problem of how to enforce the condition $u\cdot \nu = -\dot a_b$ at the ice base, where $\nu$ is the unit outward normal vector and $\dot a_b$ is the basal mass balance.
 This boundary condition is difficult to impose exactly because the unit outward normal vector $\nu$ is defined on mesh faces while the velocity is defined at mesh vertices.
 Elmer/Ice uses an ad-hoc procedure to define the unit normal vectors at mesh nodes \citep{gagliardini2013capabilities}.
-With a transformation to terrain-following coordinates, we can set the terrain-following vertical velocity $\omega$ to be $-\dot a_b/h$ at the ice base to impose this boundary condition.
+This procedure is nearly always effective in practice.
+But with a transformation to terrain-following coordinates, we can set the terrain-following vertical velocity $\omega$ to be $-\dot a_b/h$ at the ice base to impose this boundary condition with no additional intervention.
 
 We also argue that answers expressed in terrain-following coordinates are more intuitive in some respects than in Cartesian coordinates.
 At the bed of a grounded glacier, the vertical velocity in Cartesian coordinates is
