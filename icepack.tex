@@ -148,7 +148,8 @@ The PDE describing how the ice thickness changes in time is a conservative advec
 where $\dot a_s$ and $\dot a_b$ are the surface and basal mass balance.
 The thickness is represented using continuous Galerkin basis functions.
 The ice thickness and bed elevation are used to update the surface elevation at every timestep, and we need the surface gradient to calculate the driving stress.
-The need to calculate gradients of the surface elevation precludes the use of discontinuous Galerkin methods.
+The current mass transport implementation in icepack assumes continuous basis functions because this makes for the most straightforward calculation of the ice surface slope, which is part of the driving stress.
+Implementing a solver that also works for discontinuous basis functions involves is more challenging but still possible.
 
 The surface elevation is calculated at each timestep of a simulation as
 \begin{equation}
