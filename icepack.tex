@@ -331,7 +331,7 @@ In any case, the code is the same regardless of how one views the underlying mat
 
 The user then has to decide how many vertical modes are enough.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
-The degree 1 model is the most minimalistic model that still exhibits vertical shear.
+The degree 2 model is the most minimalistic model that still exhibits vertical shear and can satisfy the zero-stress boundary condition at the ice surface.
 Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
 
 \subsection{Substituting model components} \label{sec:physics-substitution}
@@ -358,7 +358,15 @@ To support use cases like implementing the Schoof sliding law, it must be possib
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
 In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
-In C++ one could avoid modifying the diagnostic solve routine by using variadic templates, but this is an advanced language feature and relying on it would present a steep learning curve for novices.
+In C++ one could avoid modifying the diagnostic solve routine by several different means.
+The function signature could be expressed using variadic templates.
+This is an advanced language feature and relying on it would present a steep learning curve for novices.
+The inputs could also be wrapped up in a class.
+Users can then define a subclass if they need to change the input fields.
+This would be a fairly idiomatic approach for the language but requires more knowledge on the part of users of object-oriented programming and its conventions than the approach we'll describe below.
+Finally, the inputs could be wrapped in a dictionary (a \texttt{std::map} from the C++ standard library).
+This approach sacrifices the static type checking guarantees of C++, one of the main advantages of the language.
+At this rate there is no marginal benefit over using a dynamically-typed language such as Python.
 
 Any model physics component in icepack can be substituted for a parameterization of the user's choosing.
 Each flow model object is initialized with a set of functions to calculate the various terms of the action functional.
@@ -371,7 +379,7 @@ The user can completely change the functional form and add new arguments, with t
 
 In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
 Using only keyword arguments enhances readability and comprehensibility for this particular case of invoking a physics solver.
-The user only needs to know the argument names, which are chosen to agree with what symbols are commonly used in the literature -- $C$ for friction, $A$ for rheology, $N$ for effective pressure, etc.
+The user only needs to know the argument names, which are chosen to agree with the English name most commonly used in the literature -- ``friction'', ``rheology'', ``velocity'', etc.
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case and not universal.
 For example, in defining a bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance.
@@ -384,8 +392,7 @@ Many scientific software packages consist of a highly-optimized core library in 
 This approach in principle offers the best of both worlds -- the runtime efficiency of a compiled language with the convenience and interactivity of an interpreted one.
 Many practitioners, however, will use such a library entirely through the interpreted surface layer and have no familiarity with the language in which the fast core was written.
 These users then have a steep learning curve to overcome when they need to modify functionality that lives in the core library, as they now need to learn an entirely new programming language.
-Some low-level kernel code is, of course, always necessary for runtime efficiency.
-With Firedrake, this responsibility is deferred to a code generator.
+Some low-level kernel code is always necessary for runtime efficiency but with Firedrake this responsibility is deferred to a code generator.
 The average user can remain largely unaware of how the code generator works even when solving very advanced problems.
 
 
@@ -420,12 +427,15 @@ This feature interacts seamlessly with the ability to modify individual model ph
 \section{Numerics}
 
 In this section we describe how various parts of the model physics were implemented in icepack, including both software design and the numerical solution procedures.
-From a design perspective, each flow model is represented by a Python class that has three responsibilities.
-First, the model class has to have a method that takes in the various fields (ice velocity, thickness, surface elevation, etc.) and returns a symbolic representation of the action functional for that particular model.
-Second, the model class must have a method that takes in the input fields and returns an approximate minimizer of the action functional.
-The diagnostic solve method amounts to invoking an external Newton solve procedure on the symbolic action functional that the first method calculates.
+The key classes that users interact with are flow models and solvers.
+The role of the model classes is to describe what problem is being solved.
+These classes describe the diagnostic model by taking in the input fields -- ice velocity, thickness, surface elevation, etc. -- and returning a symbolic representation of the action functional.
+There are several model classes, one for each set of physics equations: \texttt{ShallowIce}, \texttt{IceShelf}, \texttt{IceStream}, \texttt{HybridModel}.
+The model classes do not dictate how that problem should be solved numerically; this is the realm of a separate class called \texttt{FlowSolver}.
+This flow solver class has methods for computing the solutions of the diagnostic and prognostic equations and works the same regardless of which model is being solved.
+The diagnostic solve method amounts to invoking an external Newton solve procedure on the symbolic action functional that the model object creates.
 The Newton solver itself is completely standard but the convergence criterion is not and will be discussed in section \S\ref{sec:convergence-criteria}.
-Finally the model must have a method to update the ice thickness from the current value, the ice velocity, and the mass balance rates.
+Finally the flow solver has a method to update the ice thickness from the current value, the ice velocity, and the mass balance rates.
 The prognostic solver will be discussed in section \S\ref{sec:prognostic-model}.
 
 The Unified Form Language for specifying weak forms of PDEs contains all of the primitives necessary to express individual terms of the action functional.
@@ -451,7 +461,7 @@ Since the ice thickness does not possess shockwaves or propagating discontinuiti
 The coupling of ice thickness to velocity makes the whole system more resemble a parabolic problem than a hyperbolic one, and under the shallow ice approximation the system is truly parabolic.
 Other problems within glaciology have more of a hyperbolic character and there the argument for using shock-capturing methods is much stronger.
 For example, in continuum damage mechanics, the thresholding behavior of the source terms can induce sharp discontinuities in the damage field \citep{albrecht2014fracture}.
-The implicit Euler scheme would obscure this feature and an alternative method such as the strong stability-preserving Runge Kutta method would be more appropriate.
+The implicit Euler scheme would obscure this feature and an alternative method such as the strong stability-preserving Runge-Kutta method would be more appropriate.
 
 
 \subsection{Convex optimization}
