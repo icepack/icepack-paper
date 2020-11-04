@@ -49,7 +49,7 @@
 
 \begin{abstract}
 In this paper we introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
-Icepack is built on the finite element modeling library firedrake, which uses the domain-specific language UFL for describing weak forms of partial differential equations.
+Icepack is built on the finite element modeling library Firedrake, which uses the domain-specific language UFL for describing weak forms of partial differential equations.
 The diagnostic models in icepack are formulated through action principles that are specified in UFL.
 The components of each action functional can be substituted for different forms of the user's choosing, which makes it easy to experiment with the model physics.
 Many post-processing and analysis tasks on simulation results also amount to the evaluation of some functional.
@@ -82,7 +82,7 @@ The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep
 VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}.
 The Firedrake project began as an outgrowth of FEniCS and both packages implement the same domain-specific language for describing weak forms of PDE.
 Icepack improves upon the groundwork laid in VarGlaS in three main respects.
-First, icepack includes a simple 3D flow model that uses several features only available in firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
+First, icepack includes a simple 3D flow model that uses several features only available in Firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
 This model will be described in section \S\ref{sec:physics-hybrid-model}.
 Second, the architecture of icepack is designed to make it easy for users to alter the various physics components, such as the rheology and basal friction, of any of the models included.
 The software design that made this possible is discussed in section \S\ref{sec:physics-substitution}.
@@ -358,15 +358,15 @@ To support use cases like implementing the Schoof sliding law, it must be possib
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
 In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
-In C++ one could avoid modifying the diagnostic solve routine by several different means.
-The function signature could be expressed using variadic templates.
+In C++ one could avoid changing the signature of the diagnostic solve routine in several ways.
+First, the function signature could be expressed using variadic templates.
 This is an advanced language feature and relying on it would present a steep learning curve for novices.
-The inputs could also be wrapped up in a class.
+Second, the inputs could be wrapped up in a class.
 Users can then define a subclass if they need to change the input fields.
-This would be a fairly idiomatic approach for the language but requires more knowledge on the part of users of object-oriented programming and its conventions than the approach we'll describe below.
+This would be a fairly idiomatic approach for the language but requires users to know more about object-oriented programming than the approach we'll describe below.
 Finally, the inputs could be wrapped in a dictionary (a \texttt{std::map} from the C++ standard library).
 This approach sacrifices the static type checking guarantees of C++, one of the main advantages of the language.
-At this rate there is no marginal benefit over using a dynamically-typed language such as Python.
+At this rate there is little marginal gain over using a dynamically-typed language such as Python.
 
 Any model physics component in icepack can be substituted for a parameterization of the user's choosing.
 Each flow model object is initialized with a set of functions to calculate the various terms of the action functional.
@@ -378,12 +378,12 @@ For example, the rheology and friction coefficient are passed to the function th
 The user can completely change the functional form and add new arguments, with the restriction that arguments are passed by keyword and not positionally.
 
 In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
-Using only keyword arguments enhances readability and comprehensibility for this particular case of invoking a physics solver.
+We argue that employing only keyword arguments enhances readability and comprehensibility for the particular user case of calling a physics solver.
 The user only needs to know the argument names, which are chosen to agree with the English name most commonly used in the literature -- ``friction'', ``rheology'', ``velocity'', etc.
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case and not universal.
 For example, in defining a bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance.
-In this case, positional arguments correspond better with the semantics of the problem.
+Positional arguments correspond better with the semantics of the problem in this case than keyword arguments.
 
 One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
 Since many aspects of glacier flow are not understood completely, we view extensibility as an essential requirement for any software package in this domain.
@@ -575,7 +575,7 @@ The model object is responsible for providing the symbolic form of the action fu
 
 \subsection{Hybrid model}
 
-The hybrid flow uses several features that are only available in firedrake to better exploit the special structure of the problem.
+The hybrid flow uses several features that are only available in Firedrake to better exploit the special structure of the problem.
 Implementing this model also required some mathematical sleight-of-hand related to the terminus boundary condition that has not appeared in the literature before.
 Additionally, the hierarchical structure of spectral basis functions presents an opportunity for developing fast algorithms.
 In all other respects the implementation of the hybrid flow model using convex optimization follows the techniques described above.
@@ -590,12 +590,12 @@ Not every 3D domain can be described by extruding a 2D domain, but the geometry 
 The geometric correction factor in equation \eqref{eq:geometric-correction} for gradients in terrain-following coordinates can easily be represented in UFL.
 By defining a wrapper around the UFL \texttt{grad} function, the code to define the action functional in terrain-following coordinates is only slightly more complex than in Cartesian coordinates.
 
-For problems defined on extruded geometries, firedrake includes support for tensor product elements, which includes using different bases in the horizontal and vertical directions \citep{mcrae2016automated}.
+For problems defined on extruded geometries, Firedrake includes support for tensor product elements, which includes using different bases in the horizontal and vertical directions \citep{mcrae2016automated}.
 Tensor product elements are defined in Firedrake by passing the extra keyword arguments \texttt{vfamily}, \texttt{vdegree} to the constructor for a function space.
 In our case, we used the usual continuous Galerkin basis in the horizontal and Gauss-Legendre elements in the vertical.
 To select the Legendre polynomial basis, the user passes the keyword argument \texttt{vfamily=`Gauss-Legendre'} or \texttt{`GL'} for short to the constructor for the function space.
 
-Extruded meshes and tensor product elements are available in firedrake but not in FEniCS.
+Extruded meshes and tensor product elements are available in Firedrake but not in FEniCS.
 Other general-purpose finite element modeling packages that support tensor product elements include deal.II and nektar++ \citep{bangerth2007deal, cantwell2015nektar++}.
 Like most other packages in this domain, deal.II and nektar++ are written in C++, whereas our goal for icepack was to have both the core and the user interface in Python.
 
@@ -674,7 +674,7 @@ The second alternative is the Schoof sliding law \citep{schoof2005effect}:
     \label{eq:schoof-sliding}
 \end{equation}
 where the critical stress $\tau_c$ is a certain specified fraction of the water pressure in the subglacial hydrological system.
-In icepack sliding laws are not expressed directly but rather as the the derivative of an acction functional.
+Sliding laws in icepack are not expressed directly, but rather as the the derivative of an action functional.
 To implement the Schoof sliding law we need to know the antiderivative of equation \eqref{eq:schoof-sliding}.
 Using a computer algebra system, we found that the antiderivative of this expression in terms of hypergeometric functions.
 The Unified Form Language has several transcendental functions (sine, cosine, exponential, etc.), but it does not currently support hypergeometric functions.
