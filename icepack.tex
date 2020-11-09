@@ -395,12 +395,15 @@ These users then have a steep learning curve to overcome when they need to modif
 Some low-level kernel code is always necessary for runtime efficiency but with Firedrake this responsibility is deferred to a code generator.
 The average user can remain largely unaware of how the code generator works even when solving very advanced problems.
 
+\subsection{Heat transport} \label{sec:heat-transport}
 
-\subsection{Data assimilation}
+\subsection{Damage transport} \label{sec:damage-transport}
+
+
+\section{Data assimilation} \label{sec:data-assimilation}
 
 Icepack includes a set of routines for estimating the basal friction or rheology coefficients from observational data.
-The class \texttt{InverseProblem} represents the specification of the inverse problem.
-To specify an inverse problem, the user must provide:
+The class \texttt{InverseProblem} represents the specification of an inverse problem, which requires:
 \begin{itemize}
     \item the model object and the method that solves the diagnostic equation,
     \item the objective and regularization functionals,
@@ -408,25 +411,27 @@ To specify an inverse problem, the user must provide:
     \item an initial guess for the field to be estimated and the name of the argument to the diagnostic solver,
     \item extra data passed to the diagnostic solver such as boundary conditions.
 \end{itemize}
-At present, this class assumes that the observed state is always the ice velocity, but in principle the same design would suffice for more complicated inverse problems.
-More importantly, the inverse problem is flexible enough to account for the fact that we might have substituted in our own parameterization for the rheology or friction coefficient.
-For example, nearly all studies in the literature use an alternate parameterization of the friction coefficient in terms of some auxiliary field in order to guarantee positivity \citep{macayeal1992basal, joughin2009basal}.
-This information is passed to the inverse problem by specifying the names of the keyword arguments for the observed state and the field we wish to observe.
+This class currently assumes that the observed state is always the ice velocity.
+In principle the same design would suffice for more complicated inverse problems and this is an area of active development.
+
+The inverse problem class is flexible enough to account for users defining their own parameterization for the rheology or friction coefficient as described in \S\ref{sec:physics-substitution}.
+This flexibility with respect to parameterization is not just convenient but essential for common data assimilation workflows.
+Nearly all studies in the literature introduce a parameterization of the field to be estimated in terms of some auxiliary field in order to guarantee positivity \citep{macayeal1992basal, joughin2009basal}.
+For example, one could define the friction coefficient $C$ in terms of an auxiliary variable $\beta$ as $C = \beta^2$ to guarantee positivity.
+One could also just as easily use $C \propto \exp(\beta)$.
+The data assimilation routines in icepack can work the same for any parameterization of the physics because Firedrake provides a rich set of routines for symbolically calculating functional derivatives.
+The inverse problem class only needs to know which functional needs to be differentiated with respect to which field.
 
 The \texttt{InverseSolver} class is responsible for actually solving the inverse problem.
 This class will be described further in section \S\ref{sec:numerics-inverse-solvers}.
-The inverse solver is completely agnostic to the particular parameterization of the physics in terms of the inferred field as long as it guarantees positivity.
-This feature interacts seamlessly with the ability to modify individual model physics components as described in \S\ref{sec:physics-substitution}.
-
-
-\subsection{Damage transport}
-
-\subsection{Heat transport}
 
 
 \section{Numerics}
 
-In this section we describe how various parts of the model physics were implemented in icepack, including both software design and the numerical solution procedures.
+In the previous sections we described \emph{what} problems icepack can solve, i.e. various physics models and data assimilation problems.
+In this section, we'll describe \emph{how} these problems are solved.
+This separation between the two questions parallels the broader design of the software package.
+
 The key classes that users interact with are flow models and solvers.
 The role of the model classes is to describe what problem is being solved.
 These classes describe the diagnostic model by taking in the input fields -- ice velocity, thickness, surface elevation, etc. -- and returning a symbolic representation of the action functional.
