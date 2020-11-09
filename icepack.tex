@@ -399,6 +399,17 @@ The average user can remain largely unaware of how the code generator works even
 
 \subsection{Damage transport} \label{sec:damage-transport}
 
+Other physical fields besides temperature can influence ice fluidity.
+At large spatial scales (> 5 km), crevasse fields affect ice flow by reducing the lateral area over which stress can be transmitted.
+Modeling individual fractures is not computationally feasible for large-scale simulations.
+Instead, we have implemented the phenomenological model described in \citet{albrecht2014fracture}, which is based on the theory of continuum damage mechanics.
+This model is defined in the class \texttt{DamageTransport}.
+Prognostic damage models can be broken down into three parts: (1) evolve the damage field based on the membrane stress of the glacier, (2) advect the damage field with flow, and (3) feed the damage field back into the fluidity of the glacier.
+Changes in fluidity in turn affect the membrane stress; the coupling between bulk damage and ice flow goes both ways.
+The model from \citet{albrecht2014fracture} adds sources of damage where the membrane stress exceeds a critical value and sinks of damage when the principal strain rate is less than a critical value.
+These kinds of simplified models ignore complications such as inertial or 3D effects.
+They are intended more to capture some important features of the real physical system ecnomically than to describe it exactly.
+
 
 \section{Data assimilation} \label{sec:data-assimilation}
 
@@ -464,9 +475,11 @@ Advanced users who are interested in maximizing performance can subclass the mas
 The implicit Euler scheme tends to diffuse out sharp discontinuities that may be present in the true solution \citep{donea2003finite}.
 Since the ice thickness does not possess shockwaves or propagating discontinuities this error mode is tolerable.
 The coupling of ice thickness to velocity makes the whole system more resemble a parabolic problem than a hyperbolic one, and under the shallow ice approximation the system is truly parabolic.
-Other problems within glaciology have more of a hyperbolic character and there the argument for using shock-capturing methods is much stronger.
-For example, in continuum damage mechanics, the thresholding behavior of the source terms can induce sharp discontinuities in the damage field \citep{albrecht2014fracture}.
-The implicit Euler scheme would obscure this feature and an alternative method such as the strong stability-preserving Runge-Kutta method would be more appropriate.
+
+Other problems in glaciology have more of a hyperbolic character.
+For example, the thresholding behavior of the source terms for the damage model (see \S\ref{sec:damage-transport}) can create sharp discontinuities.
+The implicit Euler scheme would obscure this important feature.
+For the damage solver, we have instead used a strong stability-preserving Runge-Kutta method in time and a discontinuous Galerkin basis in space to best capture these sharp interfaces \citep{shu1988efficient}.
 
 
 \subsection{Convex optimization}
@@ -732,6 +745,21 @@ As a second test case for icepack, we ran an experiment inspired by \cite{kessle
 Similar to \cite{kessler2008fjord}, we use the shallow ice model; however, we do not couple it to bed-erosion, calving, and GIA models. We initialize the experiment with a simple, unrealistic ice sheet placed on the bed topography \textcolor{red}{(figure X)}. We let the ice sheet evolve without climate forcing for 500 years until it is near equilibrium. The time it takes to reach equilibrium is much shorter than the \cite{kessler2008fjord} experiment because the bedrock is static. The first part of our simulation is an exponential relaxation towards equilibrium. A velocity pattern emerges that is similar to results from \cite{kessler2008fjord}, with the highest velocities where ice is constricted through the deepest valleys \textcolor{red}{(figure X)}. In and upstream of the valleys, the surface is drawn down due to the elevated export of ice \textcolor{red}{as shown in figure X}.  
 
 The ice-flow model chosen for this simulation is computationally cheap compared to the other ice-flow models, such that it can be used to simulate an ice sheet over thousands of years. By simply switching between ice-flow models, icepack is able to simulate a range of glaciological conditions over a range of timescales and spatial scales. For example, icepack can be used to simulate a small domain dominated by an ice stream, an ice catchment that includes slow-moving interior ice and a floating ice shelf, or, as in this example, an entire ice sheet. 
+
+
+\subsection{Synthetic ice shelf with damage transport}
+
+We simulated the evolution of a synthetic ice shelf towards steady state and coupled it with the damage transport model described in \S\ref{sec:damage-transport}.
+The geometry of the ice shelf consists of the intersection of two circles, one with a larger radius and offset center, designed to roughly mimic the shape and size of real ice shelves.
+The radius of the whole shelf is 200km.
+Four ice streams flow into the shelf with varying speeds and a prescribed inflow thickness.
+In the first phase of the experiment, the ice shelf is propagated to steady state without damage for 200 years.
+After this time interval, the flux imbalance is less than 1\% of the influx.
+In the second phase, damage transport is turned on and coupled to the ice velocity.
+An interesting feature to observed in the approximate equilibrium damage field is that the highest values occur between the streams and not within them.
+Additionally, the spacing between the streams changes as a result of adding damage.
+The final ice thickness, velocity, strain rate, and damage are shown in figure \textcolor{red}{ZZZ}.
+
 
 \subsection{Larsen C Ice Shelf}
 
