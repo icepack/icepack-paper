@@ -506,7 +506,8 @@ By contrast, a damped Newton procedure using a line search that satisfies the Ar
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
 
-Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation \textcolor{red}{cite -- I think Mathieu and Dan did this}, but few if any have considered the problem of when to stop iterating.
+Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation, for example \citet{perego2012parallel}.
+Few have considered the problem of when to stop iterating.
 The most common stopping criteria are when (1) the 2-norm of the residual is sufficiently small or (2) the relative change in the iterates is sufficiently small.
 Each of these approaches has problems.
 The residual norm depends on the discretization and does not weight all degrees of freedom proportionally, e.g. vertex and edge degrees of freedom in higher-order finite element methods.
@@ -524,7 +525,7 @@ For $u_k$ sufficiently close to the true solution $u$, the Newton decrement roug
 \end{equation}
 We can then use the Newton decrement to decide when to stop the iteration.
 
-As shown in equation \eqref{action-functional}, the action has units of power and is the sum of the dissipation due to viscosity, friction, gravitational driving, and ocean back-pressure at the terminus.
+As shown in equation \eqref{action-functional}, the action for most models has units of power and is the sum of dissipation due to viscosity, friction, gravitational driving, and ocean back-pressure at the terminus.
 The viscous and frictional terms are convex, positive functions of the velocity.
 The gravitational and terminus stress terms are linear in the velocity and can be of either sign.
 If we define the \emph{scale functional}
