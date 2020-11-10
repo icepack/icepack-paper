@@ -398,6 +398,23 @@ The average user can remain largely unaware of how the code generator works even
 
 \subsection{Heat transport} \label{sec:heat-transport}
 
+We implemented the enthalpy transport model described in \citet{aschwanden2012enthalpy}.
+The enthalpy describes the heat content of the material in a way that incorporates both temperature and latent heat stored in meltwater.
+The temperature and meltwater fraction can be uniquely calculated at any point from the value of the enthalpy, so nothing is sacrificed in describing heat content one way or the other.
+Using the enthalpy has the advantage of circumventing many of the difficulties associated with tracking the interface between cold and temperate ice.
+Our implementation of the model uses all of the simplifying assumptions described in \citet{aschwanden2012enthalpy}, for example that horizontal diffusion is negligible and that heat capacity and conductivity are not temperature-dependent within each phase.
+
+The fluidity factor $A$ in Glen's law is roughly a known function of both temperature and melt fraction and we have included this function in the package.
+Having some description of heat transport is thus necessary for describing realistic glacier flows, but it is not sufficient by itself.
+For one, while the dependence of fluidity on temperature is known fairly well from laboratory experiments, the dependence on melt fraction is known with much less certainty.
+It is likely that users of this module will want to substitute in their own parameterization for melt fraction dependence.
+Second, other processes such as damage, fabric development, and impurities can affect the fluidity as well.
+For these reasons, the diagnostic model takes in the fluidity as an argument and users must calculate the fluidity field themselves, either using the default parameterization that icepack supplies or one of their own.
+Our general design principle is that icepack will solve differential equations for the various prognostic fields but it's up to users to decide how these fields are coupled.
+
+We have not implemented a model for the surface or englacial transport of meltwater, although it would be possible to include this process.
+Instead, we rely on an external scheme to act as a sink of enthalpy for meltwater fraction values above some user-defined critical value, which defaults to 1\%.
+
 \subsection{Damage transport} \label{sec:damage-transport}
 
 Other physical fields besides temperature can influence ice fluidity.
