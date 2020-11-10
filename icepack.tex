@@ -670,26 +670,6 @@ The exact symbolic integration approach is both faster and more accurate than us
 The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
 
 
-\subsubsection{Multigrid-type algorithm}
-
-One of the main advantages of this hybrid model is the ease with which a more accurate solution can be bootstrapped from a less accurate solution, since the two fields are defined on exactly the same geometry.
-For example, if we only have a very crude initial guess for the solution, we can obtain a degree-1 solution relatively cheaply.
-The resulting velocity field is then used as a much more informed initial guess for a degree-5 solution.
-\textcolor{red}{Benchmark.}
-Since the vertical basis functions are orthogonal, the projection of the degree-1 solution into the degree-5 function space can be calculated by simply copying array elements.
-By contrast, if we tried to use the same strategy to bootstrap a solution with a small number of vertical layers to a solution with a larger number of vertical layers, we would also have to interpolate values to the fine layers.
-
-Other hybrid models in the literature use only a fixed number of vertical basis functions.
-For example, \citet{bassis2010hamilton} use only the two vertical basis functions $\psi_1(\zeta) = 1$, $\psi_2(\zeta) = 1 - (1 - \zeta)^{n + 1}$, the idea being that the vertical profile can be written as a direct superposition of the plug flow and shallow ice approximation modes.
-By contrast, we leave the number of vertical basis functions up to the user.
-This flexibility enables the multigrid-type approach described above.
-
-The bootstrapping approach described here can be used both for the forward model and for inverse problems.
-First, we estimate the unknown parameter using only degree-1 vertical basis functions for the velocity field, which captures most of the spatial variability of the unknown parameter.
-The resulting coefficient is then used as the initial guess with higher degree vertical basis functions for the velocity \textcolor{red}{benchmark}.
-
-
-
 \section{Demonstrations}
 
 \subsection{MISMIP+}
