@@ -1,5 +1,7 @@
 export gibbous ?= .
 
+FIGURES += $(gibbous)/damage.png
+
 SCRIPT := $(gibbous)/ice-shelf.py
 
 $(gibbous)/ice-shelf.geo: $(gibbous)/make_mesh.py
@@ -14,3 +16,6 @@ $(gibbous)/steady-state-undamaged.h5: $(gibbous)/ice-shelf.msh $(SCRIPT)
 $(gibbous)/steady-state-damaged.h5: $(gibbous)/steady-state-undamaged.h5 $(SCRIPT)
 	python3 $(SCRIPT) --mesh $(gibbous)/ice-shelf.msh --input $< --output $@ \
 	    --damage --final-time 400 --num-steps 200
+
+$(gibbous)/damage.png: $(gibbous)/steady-state-undamaged.h5 $(gibbous)/steady-state-damaged.h5 $(gibbous)/make_plots.py
+	python3 $(gibbous)/make_plots.py --mesh $(gibbous)/ice-shelf.msh --undamaged $(gibbous)/steady-state-undamaged --damaged $(gibbous)/steady-state-damaged --output $@

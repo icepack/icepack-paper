@@ -745,7 +745,13 @@ Similar to \cite{kessler2008fjord}, we use the shallow ice model; however, we do
 The ice-flow model chosen for this simulation is computationally cheap compared to the other ice-flow models, such that it can be used to simulate an ice sheet over thousands of years. By simply switching between ice-flow models, icepack is able to simulate a range of glaciological conditions over a range of timescales and spatial scales. For example, icepack can be used to simulate a small domain dominated by an ice stream, an ice catchment that includes slow-moving interior ice and a floating ice shelf, or, as in this example, an entire ice sheet. 
 
 
-\subsection{Synthetic ice shelf with damage transport}
+\subsection{Synthetic ice shelf}
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/gibbous/damage.png}
+    \caption{Results of ice shelf damage simulation: (a) ice velocity, (b) change in ice speed with and without damage, (c) thickness, and (d) damage field.}
+    \label{fig:damage}
+\end{figure}
 
 We simulated the evolution of a synthetic ice shelf towards steady state and coupled it with the damage transport model described in \S\ref{sec:damage-transport}.
 The geometry of the ice shelf consists of the intersection of two circles, one with a larger radius and offset center, designed to roughly mimic the shape and size of real ice shelves.
@@ -756,7 +762,7 @@ After this time interval, the flux imbalance is less than 1\% of the influx.
 In the second phase, damage transport is turned on and coupled to the ice velocity.
 An interesting feature to observed in the approximate equilibrium damage field is that the highest values occur between the streams and not within them.
 Additionally, the spacing between the streams changes as a result of adding damage.
-The final ice thickness, velocity, strain rate, and damage are shown in figure \textcolor{red}{ZZZ}.
+The final ice thickness, velocity, strain rate, and damage are shown in figure \ref{fig:damage}.
 
 
 \subsection{Larsen C Ice Shelf}

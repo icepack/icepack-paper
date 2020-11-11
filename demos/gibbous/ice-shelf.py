@@ -2,8 +2,9 @@ import os
 import argparse
 import tqdm
 import firedrake
-from firedrake import as_vector, inner, ds
+from firedrake import sym, grad, as_vector, inner, ds
 import icepack
+from icepack.models.viscosity import membrane_stress
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mesh')
@@ -19,6 +20,7 @@ mesh = firedrake.Mesh(args.mesh)
 Q = firedrake.FunctionSpace(mesh, family='CG', degree=2)
 V = firedrake.VectorFunctionSpace(mesh, family='CG', degree=2)
 Δ = firedrake.FunctionSpace(mesh, family='DG', degree=1)
+S = firedrake.TensorFunctionSpace(mesh, family='DG', degree=1)
 
 # Load the initial data from an HDF5 file if available
 if args.input:
@@ -105,8 +107,15 @@ for step in tqdm.trange(num_timesteps):
         dt, thickness=h, accumulation=a, velocity=u, thickness_inflow=h0
     )
     if args.damage:
+        ε = firedrake.project(sym(grad(u)), S)
+        M = firedrake.project((1 - D) * membrane_stress(ε, A), S)
         D = damage_solver.solve(
-            dt, damage=D, velocity=u, fluidity=A, damage_inflow=D_inflow
+            dt,
+            damage=D,
+            velocity=u,
+            strain_rate=ε,
+            membrane_stress=M,
+            damage_inflow=D_inflow
         )
 
     u = flow_solver.diagnostic_solve(
