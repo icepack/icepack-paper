@@ -174,7 +174,15 @@ The only approximation in the hybrid model is that the flow has a low aspect rat
 This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
 Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
 
-\textcolor{red}{Should Glen's flow law be mentioned or written somewhere?}
+All the momentum transport models inherit a fundamental nonlinearity in the mechanics of ice flow.
+For a Newtonian viscous fluid, the stress tensor $\tau$ and the strain rate tensor $\dot\varepsilon$ are linearly proportional to each other.
+Glaciers, however, have a nonlinear constitutive relation:
+\begin{equation}
+    \dot\varepsilon = A|\tau|^{n - 1}\tau
+\end{equation}
+where $A$ is the \emph{fluidity} and $n$ is the \emph{Glen flow law exponent} \citep{cuffey2010physics}.
+The most commonly-used value of the flow law exponent is $n \approx 3$ as determined from laboratory experiments.
+
 
 \subsubsection{Variational principles}
 
