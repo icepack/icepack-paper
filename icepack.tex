@@ -55,8 +55,7 @@ The components of each action functional can be substituted for different forms 
 Many post-processing and analysis tasks on simulation results also amount to the evaluation of some functional.
 By using a variational formulation of the model physics, the specification of a problem and the analysis of the solution employ the same conceptual vocabulary.
 A third advantage of variational principles is that the action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
-Icepack features a 3D diagnostic model based on terrain-following coordinates and vertical spectral discretization.
-This model resolves both plug- and shear-flow components of horizontal ice flow with a minimum of extra computational expense over 2D, depth-averaged models.
+Icepack includes the 2D shallow ice and shallow stream models and a novel implementation of the 3D Blatter-Pattyn model.
 Finally, icepack implements a Gauss-Newton solver for inverse problems that runs substantially faster than the standard BFGS method used in the glaciological literature.
 The overall design philosophy of icepack is to be as usable as possible for a wide a swathe of the glaciological community, including both experts and novices in computational science.
 \end{abstract}
@@ -79,8 +78,15 @@ The ubiquity of C, C++, and Fortran in scientific computing can create a barrier
 Our goal is to make a tool that will be both accessible to non-experts and useful for experts.
 
 The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
-VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}.
-The Firedrake project began as an outgrowth of FEniCS and both packages implement the same domain-specific language for describing weak forms of PDE.
+VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}, whereas icepack is built on top of Firedrake.
+The Firedrake project began as an outgrowth of FEniCS.
+Both packages share a similar goal of saving users from manually writing low-level code for assembling the systems of equations that discretize their physics model.
+Instead, users describe the weak form of the partial differential equations they wish to solve using a high-level domain-specific language (DSL) called the \emph{Unified Form Language} or UFL \citep{alnaes2014unified}.
+This DSL is embedded entirely into Python, i.e. the complete syntax of UFL can be mapped directly onto overloaded operators in the Python programming language.
+Both FEniCS and Firedrake then generate optimized C or C++ code to assemble the discretized system of equations from this symbolic description of the problem \citep{kirby2006compiler, rathgeber2016firedrake}.
+Combining a DSL and a code generator frees users from the very error-prone process of writing these assembly kernels themselves, and makes the syntax of the code align closer to the syntax of written mathematical expressions.
+Additionally, having a high-level symbolic description of the problem makes it possible to automatically derive tangent linear models and adjoints \citep{mitusch2019dolfin}.
+
 Icepack improves upon the groundwork laid in VarGlaS in three main respects.
 First, icepack includes a simple 3D flow model that uses several features only available in Firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
 This model will be described in section \S\ref{sec:physics-hybrid-model}.
