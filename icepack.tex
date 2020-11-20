@@ -152,10 +152,10 @@ The PDE describing how the ice thickness changes in time is a conservative advec
     \frac{\partial h}{\partial t} + \nabla\cdot hu = \dot a_s - \dot a_b,
 \end{equation}
 where $\dot a_s$ and $\dot a_b$ are the surface and basal mass balance.
-The thickness is represented using continuous Galerkin basis functions.
+The thickness is represented using continuous, piecewise polynomial basis functions in each cell of the mesh.
 The ice thickness and bed elevation are used to update the surface elevation at every timestep, and we need the surface gradient to calculate the driving stress.
 The current mass transport implementation in icepack assumes continuous basis functions because this makes for the most straightforward calculation of the ice surface slope, which is part of the driving stress.
-Implementing a solver that also works for discontinuous basis functions involves is more challenging but still possible.
+We have not yet implemented a solver that works for discontinuous basis functions, but this extension is completely feasible within our framework and may come in a future release of icepack.
 
 The surface elevation is calculated at each timestep of a simulation as
 \begin{equation}
@@ -165,20 +165,29 @@ the first case corresponding to grounded ice and the second case corresponding t
 In the immediate vicinity of the grounding line, the assumption that the floating ice is in hydrostatic equilibrium with the ocean fails.
 Most models assume hydrostasy and icepack does as well.
 Elmer/Ice, on the other hand, solves a contact problem for the moving upper and lower ice surfaces and thus can accurately model non-hydrostatic ice shelves \citep{gagliardini2013capabilities}.
+We have not implemented this feature but support for non-hydrostatic ice shelves may come in a future release of icepack.
 
 
 \subsection{Momentum transport}
 
-There are three diagnostic models implemented in icepack.
-The \emph{shallow ice approximation} (SIA) and \emph{shallow stream approximation} (SSA) are 2D models describing the depth-averaged velocity of ice flow, while the \emph{first-order} or \emph{Blatter-Pattyn} approximation is a 3D model describing the horizontal velocity (termed the \emph{hybrid model} in icepack) \citep{blatter1995velocity, pattyn2003new}.
-The SIA model \citep{hutter1981effect} describes the interior of ice sheets well, where flow can be simply described as bed-parallel shear and surface and basal slopes are small.
-This approximation breaks down near ice divides, where vertical velocities dominate, and near ice margins, where basal sliding can be a large fraction of the surface speed.
-The SSA model describes the fast-flowing margins of the ice sheet best, encompassing grounded ice streams or floating ice shelves \citep{macayeal1989large}.
-This model is appropriate where the sliding velocity is close to the surface velocity, or in other words where the ice is nearly in plug flow.
-Plug flow is a good approximation in fast-flowing ice streams and outlet glaciers near the margins of an ice sheet, but deep in the interior the flow is mostly by vertical shear.
-The only approximation in the hybrid model is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
+There are four diagnostic models implemented in icepack.
+See \citet{dukowicz2010consistent} for a thorough explanation of the various approximations and action principles velow.
+
+The most complex and most physically accurate model is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
+(In icepack we refer to our implementation of this equation as a \emph{hybrid model} as it includes both shear and plug flow modes, described below.)
+The only approximation that the first-order model makes is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
 This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
 Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
+
+From the first-order model, two approximations are possible.
+First, the \emph{shallow ice approximation} (SIA) comes from assuming that vertical shear is the dominant mode of ice flow.
+The SIA model \citep{hutter1981effect} describes the interior of ice sheets well, where flow can be simply described as bed-parallel shear and surface and basal slopes are small.
+This approximation breaks down near ice divides, where vertical velocities dominate, and near ice margins, where basal sliding can be a large fraction of the surface speed.
+Second, one could assume that ice flow is purely by horizontal extension and that the surface and bed velocities are practically the same.
+This is called the \emph{shallow stream approximation} (SSA).
+The SSA model describes the fast-flowing margins of the ice sheet best, encompassing grounded ice streams or floating ice shelves \citep{macayeal1989large}.
+Finally, for floating ice, the shallow stream approximation simplifies further to the \emph{shallow shelf approximation}.
+The shallow shelf model has no bed friction and the ice surface elevation can be eliminated from the system.
 
 All the momentum transport models inherit a fundamental nonlinearity in the mechanics of ice flow.
 For a Newtonian viscous fluid, the stress tensor $\tau$ and the strain rate tensor $\dot\varepsilon$ are linearly proportional to each other.
@@ -188,9 +197,6 @@ Glaciers, however, have a nonlinear constitutive relation:
 \end{equation}
 where $A$ is the \emph{fluidity} and $n$ is the \emph{Glen flow law exponent} \citep{cuffey2010physics}.
 The most commonly-used value of the flow law exponent is $n \approx 3$ as determined from laboratory experiments.
-
-
-\subsubsection{Variational principles}
 
 All of the diagnostic models in icepack are described through \emph{variational} or \emph{action} principles \citep{dukowicz2010consistent}.
 Rather than describe the velocity as the weak solution of a nonlinear PDE, an action principle instead states that the velocity minimizes a functional called the action.
@@ -205,6 +211,9 @@ The action has units of power (energy/time) and can be related to the rate of de
 Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
 The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
 
+Every momentum transport model in icepack is encapsulated in its own Python class.
+The key responsibility of the model classes is to take in the input fields -- the ice thickness, velocity, etc. -- and return a symbolic description of the action functional in UFL.
+
 The action principle is especially useful for designing a robust numerical solver.
 For viscous flow problems near to steady-state, the action is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
 Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge from any initial guess.
@@ -214,6 +223,7 @@ Minimizing a convex action functional is vastly more convenient numerically than
 
 The shallow ice model can be derived from the Blatter-Pattyn approximation by assuming the ice flow is dominated by bed-parallel shear and that surface and basal slopes are small, i.e. $\partial u/\partial x \ll \partial u/\partial z$.
 The result is a 2D system of equations for depth-averaged horizontal velocity.
+The class in icepack that represents this physics model is called \texttt{ShallowIce}.
 The terms in the action functional are:
 \begin{align}
     \text{mass} & =\frac{1}{2}\int_\Omega u\cdot u\ud x\\\
@@ -233,13 +243,14 @@ This penalty term smooths over numerical artifacts, especially near the ice marg
 In these regions the shallow ice approximation is less applicable, so the error in solving a different set of equations is small compared to the inherent modeling error in using these equations in the first place.
 
 The shallow ice approximation applies well in ice-sheet interiors.
-For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \textcolor{red}{cite}.
+For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \citep{kirchner2016shallow}.
 Caution must be taken, however, because areas of the ice sheet that experience high vertical velocities (e.g., ice divides) or plug flow (e.g., ice streams) are not well represented by this approximation.
 
-\subsubsection{Shallow stream approximation}
+\subsubsection{Shallow stream and shelf approximations}
 
 The shallow stream model can be derived from the Blatter-Pattyn approximation by assuming nearly plug flow, i.e. $\partial u/\partial z \ll \partial u/\partial x$.
 In this case, the momentum equation can be vertically integrated to obtain a 2D system of equations.
+The class in icepack that represents this physics model is called \texttt{IceStream}.
 The terms in the action functional are:
 \begin{align}
     \text{viscosity} & = \frac{n}{n + 1}\int_\Omega hA^{-\frac{1}{n}}|\dot\varepsilon(u)|^{\frac{1}{n} + 1}\ud x \\
@@ -255,7 +266,9 @@ When the ice is floating, there are two simplifications: the friction coefficien
 \begin{equation}
     s = (1 - \rho_I / \rho_W)h.
 \end{equation}
-Using integration by parts, the terminus component can be eliminated completely.
+Additionally, the terminal stress term of the action disappears by applying integration by parts to the gravity term.
+Since the action functional for ice shelves has fewer terms than for grounded ice streams, we have defined a separate \texttt{IceShelf} model class.
+The ice shelf and ice stream models share common components, i.e. the viscosity and side wall stress.
 
 Several studies have compared the shallow stream approximation to 3D models such as Blatter-Pattyn or full Stokes \citep{pattyn2013grounding}.
 The most appreciable difference between lower- and higher-order models occurs near the glacier grounding line, where the full Stokes equations can represent bridging stresses \citep{van2013fundamentals}.
@@ -263,16 +276,17 @@ The lack of vertical strain rates in the ice viscosity in 2D models can also lea
 The shallow stream approximation is warranted for studying individual fast-flowing glaciers where the concern is more with studying processes and responses than with complete accuracy.
 
 
-\subsection{Hybrid model} \label{sec:physics-hybrid-model}
+\subsubsection{Hybrid model} \label{sec:physics-hybrid-model}
 
-The shallow ice and shallow stream models in icepack follow directly from the variational principles described above.
+The first-order model in icepack is described in the class \texttt{HybridModel}.
+The shallow ice and shallow stream models follow directly from the variational principles described above.
 The hybrid flow model, while also based on a variational principle, uses two more tricks: terrain-following coordinates and vertical spectral methods.
 Each of these methods has appeared in the literature on glacier modeling before but never all in the same place for a 3D model.
 \citet{langdon1978numerical} and \cite{bassis2010hamilton} used variational principles and vertical spectral methods, but these works considered only flowband and not 3D models.
 \citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
 \citet{jouvet2015multilayer} used vertical semi-discretization of the variational problem, but this model used a finite difference discretization in the vertical direction.
 
-\subsubsection{Terrain-following coordinates}
+\paragraph{Terrain-following coordinates}
 
 Rather than use the usual Cartesian coordinate system, the hybrid flow model uses terrain-following coordinates.
 The terrain-following vertical coordinate $\zeta$ is
@@ -315,7 +329,7 @@ In other words, it is not immediately clear whether the vertical velocity is a r
 By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
 
 
-\subsubsection{Spectral discretization}
+\paragraph{Spectral discretization}
 
 Terrain-following coordinates open up several choices for how to describe the vertical variation of the velocity field.
 In Elmer/Ice, for example, the user can extend the finite element discretization into a number of vertical layers.
@@ -407,7 +421,7 @@ Many scientific software packages consist of a highly-optimized core library in 
 This approach in principle offers the best of both worlds -- the runtime efficiency of a compiled language with the convenience and interactivity of an interpreted one.
 Many practitioners, however, will use such a library entirely through the interpreted surface layer and have no familiarity with the language in which the fast core was written.
 These users then have a steep learning curve to overcome when they need to modify functionality that lives in the core library, as they now need to learn an entirely new programming language.
-Some low-level kernel code is always necessary for runtime efficiency but with Firedrake this responsibility is deferred to a code generator.
+Some low-level kernel code is always necessary for runtime efficiency but with Firedrake this responsibility is deferred to a code generator \citep{rathgeber2016firedrake}.
 The average user can remain largely unaware of how the code generator works even when solving very advanced problems.
 
 \subsection{Heat transport} \label{sec:heat-transport}
@@ -634,7 +648,7 @@ In all other respects the implementation of the hybrid flow model using convex o
 \subsubsection{Discretization}
 
 In order to use terrain-following coordinates, the hybrid model assumes that the geometry of the domain is an extruded mesh, where a 2D footprint mesh is lifted into 3D.
-Firedrake includes support for creating extruded meshes by calling the function \texttt{ExtrudedMesh} on the 2D footprint \citep{bercea2016structure}.
+Firedrake includes support for creating extruded meshes by calling the function \texttt{ExtrudedMesh} on the 2D footprint \citep{bercea2016structure, mcrae2016automated}.
 The cells of an extruded mesh are triangular prisms instead of the more common tetrahedra used for general 3D meshes.
 Not every 3D domain can be described by extruding a 2D domain, but the geometry of most glacier flow problems can.
 
@@ -752,11 +766,23 @@ The numerical advantages of using variational principles are so great, however, 
 
 
 \subsection{Synthetic ice sheet}
-As a second test case for icepack, we ran an experiment inspired by \cite{kessler2008fjord}. In the original work, the authors couple an ice-flow model with simple models for bed-erosion, calving, and \textcolor{red}{glacial isostatic adjustment (GIA)} to investigate the formation of deep fjords that are characteristic of coastlines on Baffin Island, Greenland, and British Columbia, among others. Their first experiment is set in an idealized circular domain that contains a bedrock plateau rimmed by a ridge that is studded with four valleys. They find that fjords become well-developed after about one million years and that ice velocities are highest in these fjords. 
 
-Similar to \cite{kessler2008fjord}, we use the shallow ice model; however, we do not couple it to bed-erosion, calving, and GIA models. We initialize the experiment with a simple, unrealistic ice sheet placed on the bed topography \textcolor{red}{(figure X)}. We let the ice sheet evolve without climate forcing for 500 years until it is near equilibrium. The time it takes to reach equilibrium is much shorter than the \cite{kessler2008fjord} experiment because the bedrock is static. The first part of our simulation is an exponential relaxation towards equilibrium. A velocity pattern emerges that is similar to results from \cite{kessler2008fjord}, with the highest velocities where ice is constricted through the deepest valleys \textcolor{red}{(figure X)}. In and upstream of the valleys, the surface is drawn down due to the elevated export of ice \textcolor{red}{as shown in figure X}.  
+As a second test case for icepack, we ran an experiment inspired by \cite{kessler2008fjord}.
+In the original work, the authors couple an ice-flow model with simple models for bed-erosion, calving, and \textcolor{red}{glacial isostatic adjustment (GIA)} to investigate the formation of deep fjords that are characteristic of coastlines on Baffin Island, Greenland, and British Columbia, among others.
+Their first experiment is set in an idealized circular domain that contains a bedrock plateau rimmed by a ridge that is studded with four valleys.
+They find that fjords become well-developed after about one million years and that ice velocities are highest in these fjords.
 
-The ice-flow model chosen for this simulation is computationally cheap compared to the other ice-flow models, such that it can be used to simulate an ice sheet over thousands of years. By simply switching between ice-flow models, icepack is able to simulate a range of glaciological conditions over a range of timescales and spatial scales. For example, icepack can be used to simulate a small domain dominated by an ice stream, an ice catchment that includes slow-moving interior ice and a floating ice shelf, or, as in this example, an entire ice sheet. 
+Similar to \cite{kessler2008fjord}, we use the shallow ice model; however, we do not couple it to bed-erosion, calving, or GIA.
+We initialized the experiment with a simple but unrealistic ice thickness \textcolor{red}{(figure X)}.
+We then evolve the ice sheet without climate forcing for 500 years until it is near equilibrium.
+The time it takes to reach equilibrium is much shorter than the \cite{kessler2008fjord} experiment because the bedrock is static.
+The first part of our simulation is an exponential relaxation towards equilibrium.
+A velocity pattern emerges that is similar to results from \cite{kessler2008fjord}, with the highest velocities where ice is constricted through the deepest valleys \textcolor{red}{(figure X)}.
+In and upstream of the valleys, the surface is drawn down due to the elevated export of ice \textcolor{red}{as shown in figure X}.
+
+The ice-flow model chosen for this simulation is computationally cheap compared to the other ice-flow models, such that it can be used to simulate an ice sheet over thousands of years.
+By simply switching between ice-flow models, icepack is able to simulate many different glaciological conditions over a wide range of spatiotemporal scales.
+For example, icepack can be used to simulate a small domain dominated by an ice stream, an ice catchment that includes slow-moving interior ice and a floating ice shelf, or, as in this example, an entire ice sheet.
 
 
 \subsection{Synthetic ice shelf}
