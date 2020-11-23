@@ -145,16 +145,17 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
 \end{table}
 
 
-\subsection{Mass transport}
+\subsection{Prognostic model}
 
-The PDE describing how the ice thickness changes in time is a conservative advection equation:
+The \emph{prognostic model} or \emph{mass transport equation} (the two terms are synonymous) describes how the ice thickness changes in time.
+The prognostic model is a conservative advection equation:
 \begin{equation}
     \frac{\partial h}{\partial t} + \nabla\cdot hu = \dot a_s - \dot a_b,
 \end{equation}
 where $\dot a_s$ and $\dot a_b$ are the surface and basal mass balance.
 The thickness is represented using continuous, piecewise polynomial basis functions in each cell of the mesh.
 The ice thickness and bed elevation are used to update the surface elevation at every timestep, and we need the surface gradient to calculate the driving stress.
-The current mass transport implementation in icepack assumes continuous basis functions because this makes for the most straightforward calculation of the ice surface slope, which is part of the driving stress.
+The current prognostic model implementation in icepack assumes continuous basis functions because this makes for the most straightforward calculation of the ice surface slope, which is part of the driving stress.
 We have not yet implemented a solver that works for discontinuous basis functions, but this extension is completely feasible within our framework and may come in a future release of icepack.
 
 The surface elevation is calculated at each timestep of a simulation as
@@ -168,9 +169,9 @@ Elmer/Ice, on the other hand, solves a contact problem for the moving upper and 
 We have not implemented this feature but support for non-hydrostatic ice shelves may come in a future release of icepack.
 
 
-\subsection{Momentum transport}
+\subsection{Diagnostic model}
 
-There are four diagnostic models implemented in icepack.
+There are four \emph{diagnostic} or \emph{momentum transport} models implemented in icepack.
 See \citet{dukowicz2010consistent} for a thorough explanation of the various approximations and action principles velow.
 
 The most complex and most physically accurate model is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
@@ -189,7 +190,7 @@ The SSA model describes the fast-flowing margins of the ice sheet best, encompas
 Finally, for floating ice, the shallow stream approximation simplifies further to the \emph{shallow shelf approximation}.
 The shallow shelf model has no bed friction and the ice surface elevation can be eliminated from the system.
 
-All the momentum transport models inherit a fundamental nonlinearity in the mechanics of ice flow.
+All the diagnostic models inherit a fundamental nonlinearity in the mechanics of ice flow.
 For a Newtonian viscous fluid, the stress tensor $\tau$ and the strain rate tensor $\dot\varepsilon$ are linearly proportional to each other.
 Glaciers, however, have a nonlinear constitutive relation:
 \begin{equation}
@@ -211,7 +212,7 @@ The action has units of power (energy/time) and can be related to the rate of de
 Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
 The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
 
-Every momentum transport model in icepack is encapsulated in its own Python class.
+Every diagnostic model in icepack is encapsulated in its own Python class.
 The key responsibility of the model classes is to take in the input fields -- the ice thickness, velocity, etc. -- and return a symbolic description of the action functional in UFL.
 
 The action principle is especially useful for designing a robust numerical solver.
@@ -249,7 +250,7 @@ Caution must be taken, however, because areas of the ice sheet that experience h
 \subsubsection{Shallow stream and shelf approximations}
 
 The shallow stream model can be derived from the Blatter-Pattyn approximation by assuming nearly plug flow, i.e. $\partial u/\partial z \ll \partial u/\partial x$.
-In this case, the momentum equation can be vertically integrated to obtain a 2D system of equations.
+The momentum equations can, again, be vertically integrated to obtain a 2D system of equations.
 The class in icepack that represents this physics model is called \texttt{IceStream}.
 The terms in the action functional are:
 \begin{align}
@@ -508,15 +509,15 @@ For example, the strain rate for a given velocity field $u$ can be written as \t
 \subsection{Advective transport} \label{sec:prognostic-model}
 
 The simplest explicit timestepping schemes are unstable with continuous Galerkin finite elements.
-To solve the mass transport equation, other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \citep{brinkerhoff2013data, larour2012continental}.
+To solve the advection equation equation, other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \citep{brinkerhoff2013data, larour2012continental}.
 The SUPG method with an explicit time discretization is conditionally stable \citep{donea2003finite}.
 This scheme introduces a tuneable stabilization parameter, so in the interest of simplicity we instead default to the implicit Euler scheme.
 The implicit Euler scheme requires solving a non-symmetric linear system, but the computational cost comes with the advantage of unconditional stability.
 
 Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy condition.
 The use of an unconditionally stable scheme guarantees that they will get an answer should they try to use a large timestep rather than a runtime error.
-The extra cost of using an implicit time discretization for the mass transport equation is dwarfed by the cost of the diagnostic solve in any case.
-Advanced users who are interested in maximizing performance can subclass the mass transport solver to implement a faster explicit scheme.
+The extra cost of using an implicit time discretization for the prognostic equation is dwarfed by the cost of the diagnostic solve in any case.
+Advanced users who are interested in maximizing performance can subclass the solver to implement a faster explicit scheme.
 
 The implicit Euler scheme tends to diffuse out sharp discontinuities that may be present in the true solution \citep{donea2003finite}.
 Since the ice thickness does not possess shockwaves or propagating discontinuities this error mode is tolerable.
