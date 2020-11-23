@@ -408,7 +408,7 @@ For example, the rheology and friction coefficient are passed to the function th
 The user can completely change the functional form and add new arguments, with the restriction that arguments are passed by keyword and not positionally.
 
 In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
-We argue that employing only keyword arguments enhances readability and comprehensibility for the particular user case of calling a physics solver.
+We argue that employing only keyword arguments is a strength rather than weakness because it enhances readability and comprehensibility for the particular use case of calling a physics solver.
 The user only needs to know the argument names, which are chosen to agree with the English name most commonly used in the literature -- ``friction'', ``rheology'', ``velocity'', etc.
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case and not universal.
@@ -515,7 +515,7 @@ This scheme introduces a tuneable stabilization parameter, so in the interest of
 The implicit Euler scheme requires solving a non-symmetric linear system, but the computational cost comes with the advantage of unconditional stability.
 
 Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy condition.
-The use of an unconditionally stable scheme guarantees that they will get an answer should they try to use a large timestep rather than a runtime error.
+The use of an unconditionally stable scheme guarantees that they will get an answer, rather than a runtime error, should they try to use a large timestep.
 The extra cost of using an implicit time discretization for the prognostic equation is dwarfed by the cost of the diagnostic solve in any case.
 Advanced users who are interested in maximizing performance can subclass the solver to implement a faster explicit scheme.
 
@@ -790,7 +790,7 @@ For example, icepack can be used to simulate a small domain dominated by an ice 
 
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/gibbous/damage.png}
-    \caption{Results of ice shelf damage simulation: (a) ice velocity, (b) change in ice speed with and without damage, (c) thickness, and (d) damage field.}
+    \caption{Results of ice shelf damage simulation: (a) ice velocity without damage, (b) change in ice speed with and without damage, (c) thickness, and (d) damage field.}
     \label{fig:damage}
 \end{figure}
 
@@ -922,7 +922,7 @@ In so doing, we avoid confronting novice users with options that they might not 
 Advanced users who wish to tune solver performance for large simulations will need some way to make choices about algorithms.
 For example, a more advanced user might choose the GMRES iterative solver together with an incomplete LU preconditioner to solve linear systems.
 The solver classes, as opposed to the model classes, provide the interface for making these kinds of algorithmic choices.
-While alternative solvers might offer faster runtime performance than direct factorization, they also requires making additional choices choices -- how often to restart GMRES?
+While alternative solvers might offer faster runtime performance than direct factorization, they also requires making additional choices -- how often to restart GMRES?
 How much fill-in to allow in the incomplete factorization?
 Many glaciologists do not have the background in numerical linear algebra to know that adjusting these parameters could make the difference between solver convergence or breakdown.
 Similarly, users might want to select between different discretization strategies for the Stokes equations, which must be chosen carefully in order to satisfy the Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) conditions \citep{boffi2013mixed}.
