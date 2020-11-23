@@ -383,37 +383,44 @@ The Schoof sliding law, on the other hand, has a totally different functional de
 Several authors, including Schoof, have proposed that the basal shear stress is also a function of the effective pressure $N = \rho gh - p_w$ within the subglacial hydrological system \citep{budd1979empirical, schoof2005effect}.
 Implementing these more sophisticated mathematical models would require adding an extra argument to the procedure for solving the diagnostic equation.
 
-One of our goals with icepack is to facilitate experimentation with the model physics.
+One of our goals with icepack is to facilitate experimentation with the model physics, even for novice users.
+Of the programming languages that are commonly used for scientific computing, only Python and possibly Julia would meet these needs.
 To support use cases like implementing the Schoof sliding law, it must be possible to completely alter the functional form of a given model physics component.
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
 In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
-For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function.
-In C++ one could avoid changing the signature of the diagnostic solve routine in several ways.
-First, the function signature could be expressed using variadic templates.
-This is an advanced language feature and relying on it would present a steep learning curve for novices.
-Second, the inputs could be wrapped up in a class.
-Users can then define a subclass if they need to change the input fields.
-This would be a fairly idiomatic approach for the language but requires users to know more about object-oriented programming than the approach we'll describe below.
-Finally, the inputs could be wrapped in a dictionary (a \texttt{std::map} from the C++ standard library).
-This approach sacrifices the static type checking guarantees of C++, one of the main advantages of the language.
-At this rate there is little marginal gain over using a dynamically-typed language such as Python.
+For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function, which is undesirable.
+In C++, one could avoid changing the signature of the diagnostic solve routine by (1) using variadic templates, (2) wrapping the inputs in a class, or (3) passing all arguments in a dictionary.
+Using variadic templates or wrapping the inputs in a class would require users to know more about generic or object-oriented programming than a novice might.
+Using a dictionary data structure to pass arguments is relatively easier but would be more idiomatic in Python than in C++.
 
-Any model physics component in icepack can be substituted for a parameterization of the user's choosing.
-Each flow model object is initialized with a set of functions to calculate the various terms of the action functional.
-For example, the ice stream model is initialized with functions to calculate the contributions due to viscosity, basal friction, side wall drag, and gravity.
-The default parameterizations are set to the most common choices in the literature, but if the user does wish to change a given component, they can pass a function that they write to the initializer for the model object.
-When the diagnostic solve procedure is invoked, all of its arguments are then passed on by keyword to the method that calculates the action functional.
-Any fields that are unnecessary for calculating a given component are ignored.
-For example, the rheology and friction coefficient are passed to the function that calculates the gravitational driving power, and this function makes no use of these arguments.
-The user can completely change the functional form and add new arguments, with the restriction that arguments are passed by keyword and not positionally.
+In icepack, users can substitute any diagnostic model component for the parameterization of their choosing, including adding new fields.
+From the user's perspective, substituting model physics components does not require any advanced language features beyond keyword arguments.
+To understand how this is possible, we'll briefly describe the path that the input fields take through the program.
+\begin{enumerate}
+    \item The user passes all arguments to the diagnostic solve procedure by keyword, essentially in a dictionary mapping names to fields.
+    \item The diagnostic solve procedure creates a symbolic representation of the action functional by summing up several terms, like the viscosity, basal friction, etc.
+        Calculating these terms is delegated to specialized procedures for each term.
+        Each term procedure gets the entire collection of fields.
+    \item The routine that calculates the terms of the action selects which fields it actually needs from the argument dictionary, and then creates the symbolic representation of that term.
+    \item Finally, once the symbolic representation of the action functional has been created, all the responsibility passes to the nonlinear solver.
+\end{enumerate}
+To substitute different model components, the user intervenes at step 3.
+Each model object -- shallow ice, shallow stream, etc. -- is initialized with a default set of routines to calculate the terms of that model's action functional.
+The user can replace these default routines with one of their own choosing by passing the function of their choice when that model object is initialized.
+
+In step 3, any fields that were unnecessary for calculating a given component are ignored.
+For example, the gravitational driving power routine will pull out the velocity, thickness, and surface elevation.
+It will have access to other fields, for example the ice fluidity.
+These extra arguments are ignored.
 
 In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
-We argue that employing only keyword arguments is a strength rather than weakness because it enhances readability and comprehensibility for the particular use case of calling a physics solver.
+We argue that employing only keyword arguments is a strength rather than a weakness because it enhances readability and comprehensibility for the particular use case of calling a physics solver.
 The user only needs to know the argument names, which are chosen to agree with the English name most commonly used in the literature -- ``friction'', ``rheology'', ``velocity'', etc.
 The order of the arguments is arbitrary and immaterial.
-The preference for argument passing by name is specific to this use case and not universal.
-For example, in defining a bilinear form that represents a non-symmetric PDE, the order of the arguments has intrinsic mathematical significance.
-Positional arguments correspond better with the semantics of the problem in this case than keyword arguments.
+The preference for argument passing by name is specific to this use case, however, and is not universal.
+
+One key limitation of our approach is that users can change individual terms of the action functional but they cannot add or remove terms.
+This calls for creating an entirely new diagnostic model.
 
 One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
 Since many aspects of glacier flow are not understood completely, we view extensibility as an essential requirement for any software package in this domain.
