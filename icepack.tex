@@ -876,8 +876,8 @@ We were unable to achieve the same model-data misfit using bedmap2 at the same g
 
 One of the main goals for icepack is to create a tool that is accessible to researchers who might not be experts in scientific computing.
 Previous work on numerical modeling of glacier flow has focused largely on technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory, does it scale to large numbers of processors, can models accurately predict grounding line retreat, etc.
-The fallible human learning to use the model is largely absent from the discussion.
-For graduate students or other researchers who are not experts in computational physics, the difficulty of learning to use a particular modeling tool may be more of a rate-limiting factor than the speed or efficiency of the model.
+The human learning to use an unfamiliar software tool is largely absent from the discussion.
+For graduate students or other researchers who are not experts in computational physics, the difficulty of learning to use a particular software package may be more of a rate-limiting factor than the speed or efficiency of that software.
 
 The field of \emph{human-computer interaction} (HCI) asks how we can design software that is easiest to learn and use effectively.
 In the following, we will describe some of the design choices in icepack and how they relate to what HCI researchers call the \emph{cognitive dimensions of notations}.
@@ -886,23 +886,25 @@ In the following, we will describe some of the design choices in icepack and how
 \textbf{Consistency: After a user learns part of the software, can they guess the remaining parts?}
 Each of the model objects in icepack is a class with a method ending in \texttt{solve} that takes in keyword arguments for the various input fields and options for things like boundary conditions.
 Users already familiar with, say, the \texttt{IceStream} class can then use the \texttt{HeatTransport} class under the assumption that the input fields -- the current temperature $T$, ice velocity $u$, and basal melt rate $m$ -- are passed as keyword arguments with the same name as the fields themselves.
-This obviates the need for consulting the documentation or examples.
+Consistency obviates the need for repeatedly consulting the documentation or examples once users are already familiar with the software.
 
 \textbf{Progressive evaluation: How easily can users get feedback during their use of the software?}
-Progressive evaluation is the main advantage of having a user interface in Python or another interpreted language, as opposed to using compiled programs that must run all at once.
-Icepack includes a suite of example programs that demonstrate all of the main functions of the package.
-These demos are formatted as Jupyter notebooks, a document format that includes code, figures, and explanatory text with typeset mathematics that runs interactively in a web browser \citep{kluyver2016jupyter}.
-A notebook is a sequence of cells, each of which consists of either code or text.
-The code cells can be executed one-at-a-time and this enables users to insert diagnostics in each cell as they go.
-Most importantly, the notebook format also integrates the plotting library matplotlib so that figures created in each cell appear directly beneath that cell as it is executed.
-The ability to visualize the current state of the simulation at every step is a powerful tool for debugging and sanity-checking.
-\textcolor{red}{Picture of an executed jupyter notebook.}
-The interface for icepack also supports inspection of partial results in other ways.
-Running a simulation amounts to writing a loop that alternates prognostic and diagnostic solves.
-Users can add arbitrary code to this loop for sanity checking or feedback on progress, or they can manually step through the simulation one iteration at a time.
-Other packages only support a more coarse-grained view.
-The user specifies the starting and ending time of a simulation, and the degree of feedback is hard-coded into the package itself.
+Progressive evaluation is the main advantage of having a user interface in an interpreted programming language such as Python as opposed to a compiled language where programs run in batch mode.
+All non-trivial simulations of physical systems begin life broken.
+The ability to manually step through a simulation and examine the entire state in an interpreter is critical to finding errors faster.
+Icepack was designed to give fine-grained control over how simulations work in order to support this mode of debugging.
+The API provides routines for solving the diagnostic and prognostic equations.
+It is the user's responsibility for making the repeated calls to these routines, either in a loop or by manually iterating through one step at a time.
+With this responsibility comes the freedom to add in arbitrary code.
+This capability might be used to add sanity checks, such as printing minimum and maximum thickness or velocity values.
+It can also be used to get feedback on how long the simulation will take, or to save results for later visualization.
+Other packages support a more coarse-grained view where the user only specifies the start and end time of a simulation and has more limited options for inspecting the state of the running program.
 
+Icepack makes extensive use of Jupyter notebooks as a form of executable documentation.
+Jupyter notebooks are a document format that includes code and explanatory text with typeset mathematics that runs interactively in a web browser \citep{kluyver2016jupyter}.
+The contents of a notebook can executed incrementally much like running code in the Python interpreter.
+Most importantly, Jupyter notebooks will render and display visualizations on the fly.
+This enables a workflow where plotting all intermediate results serves for sanity-checking an experimental simulation.
 
 \textbf{Abstraction gradient: What are the levels of abstraction exposed by the library?
 Can irrelevant details be hidden?}
@@ -910,17 +912,18 @@ The API for icepack has been designed so that the users only need to decide what
 Where a choice does concern more the ``how'' than the ``what'', we use a sensible default that biases for correctness rather than speed.
 For example, the Newton solver uses a direct factorization method to solve the linear system for the search direction because factorization requires no tuning whereas iterative methods do.
 A user interested in achieving greater runtime performance can pass additional keyword arguments instead specifying, say, the preconditioned conjugate gradient method.
-This choice is of interest mostly to advanced users so we keep the linear solver method as a default argument.
+This choice is of interest mostly to advanced users so we keep the linear solver algorithm as a default argument.
 In so doing, we avoid confronting novice users with options that they might not understand.
 
-Advanced users who wish to tune solver performance for large simulations will need some way to make choices about algorithms.
-For example, a more advanced user might choose the GMRES iterative solver together with an incomplete LU preconditioner to solve linear systems.
-The solver classes, as opposed to the model classes, provide the interface for making these kinds of algorithmic choices.
+Advanced users who do wish to tune solver performance for large simulations will need some way to make choices about algorithms.
+For example, one might choose the GMRES iterative solver together with an incomplete LU preconditioner to solve linear systems.
+The solver classes, as opposed to the model classes, provide the interface for making these choices.
 While alternative solvers might offer faster runtime performance than direct factorization, they also requires making additional choices -- how often to restart GMRES?
 How much fill-in to allow in the incomplete factorization?
 Many glaciologists do not have the background in numerical linear algebra to know that adjusting these parameters could make the difference between solver convergence or breakdown.
-Similarly, users might want to select between different discretization strategies for the Stokes equations, which must be chosen carefully in order to satisfy the Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) conditions \citep{boffi2013mixed}.
-When using Galerkin least-squares \textcolor{red}{check that's actually what it is} stabilization of the weak form, the user has to pick a value of the stabilization parameter.
+As another example, users might want to select between different discretization strategies for the Stokes equations.
+The discretization of the Stokes equations has to be chosen carefully in order to satisfy the Ladyzhenskaya-Babu\v{s}ka-Brezzi (LBB) conditions \citep{boffi2013mixed}.
+When using Galerkin least-squares stabilization of the weak form, the user has to pick a value of the stabilization parameter.
 Determining exactly what value of this parameter is necessary to guarantee stability is a subtle problem, even more so for the kinds of highly anisotropic meshes that are commonly encountered in 3D glacier flow modeling.
 If the solver fails to converge, it might not be obvious even to an expert whether the problem lies with the stabilization or the aforementioned parameters of the linear solver.
 
