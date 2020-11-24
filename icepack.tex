@@ -419,18 +419,8 @@ The user only needs to know the argument names, which are chosen to agree with t
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case, however, and is not universal.
 
-One key limitation of our approach is that users can change individual terms of the action functional but they cannot add or remove terms.
-This calls for creating an entirely new diagnostic model.
-
-One of our main design goals for icepack is to enable users to ``plug and play'' their own physics.
-Since many aspects of glacier flow are not understood completely, we view extensibility as an essential requirement for any software package in this domain.
-Writing the entire package in Python was necessary to meet this goal.
-Many scientific software packages consist of a highly-optimized core library in C, C++, or Fortran, together with a wrapper that exposes this library to an interpreted language like Python.
-This approach in principle offers the best of both worlds -- the runtime efficiency of a compiled language with the convenience and interactivity of an interpreted one.
-Many practitioners, however, will use such a library entirely through the interpreted surface layer and have no familiarity with the language in which the fast core was written.
-These users then have a steep learning curve to overcome when they need to modify functionality that lives in the core library, as they now need to learn an entirely new programming language.
-Some low-level kernel code is always necessary for runtime efficiency but with Firedrake this responsibility is deferred to a code generator \citep{rathgeber2016firedrake}.
-The average user can remain largely unaware of how the code generator works even when solving very advanced problems.
+One key limitation of our approach is that, while users can change what goes into one or more terms of the action functional, they cannot add or remove terms.
+This case would call for writing a new diagnostic model.
 
 \subsection{Heat transport} \label{sec:heat-transport}
 
