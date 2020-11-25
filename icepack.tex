@@ -765,22 +765,27 @@ The numerical advantages of using variational principles are so great, however, 
 
 \subsection{Synthetic ice sheet}
 
-As a second test case for icepack, we ran an experiment inspired by \cite{kessler2008fjord}.
-In the original work, the authors couple an ice-flow model with simple models for bed-erosion, calving, and \textcolor{red}{glacial isostatic adjustment (GIA)} to investigate the formation of deep fjords that are characteristic of coastlines on Baffin Island, Greenland, and British Columbia, among others.
-Their first experiment is set in an idealized circular domain that contains a bedrock plateau rimmed by a ridge that is studded with four valleys.
-They find that fjords become well-developed after about one million years and that ice velocities are highest in these fjords.
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/ice-sheet/ice-sheet.png}
+    \caption{Synthetic ice sheet simulation: (a) the bed elevation profile consists of a ring of mountains with valleys of varying depth surrounding a flat plateau where the ice is initialized to (b) the change in thickness over the simulation period}
+    \label{fig:ice-sheet}
+\end{figure}
 
-Similar to \cite{kessler2008fjord}, we use the shallow ice model; however, we do not couple it to bed-erosion, calving, or GIA.
-We initialized the experiment with a simple but unrealistic ice thickness \textcolor{red}{(figure X)}.
-We then evolve the ice sheet without climate forcing for 500 years until it is near equilibrium.
-The time it takes to reach equilibrium is much shorter than the \cite{kessler2008fjord} experiment because the bedrock is static.
-The first part of our simulation is an exponential relaxation towards equilibrium.
-A velocity pattern emerges that is similar to results from \cite{kessler2008fjord}, with the highest velocities where ice is constricted through the deepest valleys \textcolor{red}{(figure X)}.
-In and upstream of the valleys, the surface is drawn down due to the elevated export of ice \textcolor{red}{as shown in figure X}.
+As a demonstration of the shallow ice approximation model, we ran an experiment inspired by \cite{kessler2008fjord}.
+In this work, the authors coupled an ice flow model to simple models for bed-erosion, calving, and glacial isostatic adjustment (GIA) to investigate the formation of deep fjords that are characteristic of coastlines on Baffin Island, Greenland, and British Columbia, among others.
+We emulated their domain and bedrock geometry -- a plateau surrounded by a ridge punctuated by four valleys -- without also simulating erosion or GIA.
+These effects will be the subject of future work.
 
-The ice-flow model chosen for this simulation is computationally cheap compared to the other ice-flow models, such that it can be used to simulate an ice sheet over thousands of years.
-By simply switching between ice-flow models, icepack is able to simulate many different glaciological conditions over a wide range of spatiotemporal scales.
-For example, icepack can be used to simulate a small domain dominated by an ice stream, an ice catchment that includes slow-moving interior ice and a floating ice shelf, or, as in this example, an entire ice sheet.
+Figure \ref{fig:ice-sheet} shows the results of this computational experiment.
+We initialized the experiment with a simple but unrealistic ice thickness.
+We then evolved the ice sheet without climate forcing for 500 years.
+The ice sheet relaxes very rapidly in the first 200 years, but after this changes are much slower as ice must be funneled through one of the four narrow valleys.
+The resulting velocity pattern is similar to that of \citet{kessler2008fjord}, with the highest velocities where ice flows out from the valleys.
+In and upstream of the valleys, the surface is drawn down due to the elevated export of ice.
+
+The diagnostic model used in this demonstration is cheap enough that it can be used to simulate ice sheets over several millenia in a matter of minutes on a desktop.
+A key feature of icepack is the ability to choose between many different diagnostic models.
+Users are free to decide whichever model is most appropriate for the spatial and temporal scales of their problem.
 
 
 \subsection{Synthetic ice shelf}
