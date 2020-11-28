@@ -28,12 +28,22 @@ chk = firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ)
 chk.load(h, name='h')
 chk.load(u, name='u')
 
-fig, axes = icepack.plot.subplots(nrows=2, sharex=True, sharey=True,
-                                  figsize=(6.4, 2.8))
-contours_h = icepack.plot.tricontourf(h, 40, axes=axes[0])
-fig.colorbar(contours_h, ax=axes[0], fraction=0.0075, pad=0.04, label='m')
+fig, axes = icepack.plot.subplots(
+    nrows=2, sharex=True, sharey=True, figsize=(6.4, 2.8)
+)
+
+axes[0].get_xaxis().set_visible(False)
+for ax in axes:
+    ax.set_xlim(0, 640e3)
+    ax.set_ylim(0, 80e3)
+    ax.get_yaxis().set_visible(False)
+
+colors_h = icepack.plot.tripcolor(h, axes=axes[0])
+fig.colorbar(colors_h, ax=axes[0], fraction=0.0075, pad=0.04, label='m')
 axes[0].set_title('Thickness')
-contours_u = icepack.plot.tricontourf(u, 40, axes=axes[1])
-fig.colorbar(contours_u, ax=axes[1], fraction=0.0075, pad=0.04, label='m/year')
+
+colors_u = icepack.plot.tripcolor(u, axes=axes[1])
+fig.colorbar(colors_u, ax=axes[1], fraction=0.0075, pad=0.04, label='m/year')
 axes[1].set_title('Velocity')
+
 fig.savefig(args.output, dpi=300, bbox_inches='tight')
