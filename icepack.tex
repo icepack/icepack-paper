@@ -742,7 +742,7 @@ The relative difference in basal shear stress between the two sliding laws is le
     \label{fig:sliding-laws}
 \end{figure}
 
-A sample of the source code implementing both of these approaches is shown in \textcolor{red}{Figure X}.
+The source code implementing both of these approaches is contained in the supplementary material.
 To change the sliding law, users only need to pass one function or the other to the model object at initialization.
 Users do not need to implement a subclass that overrides some parent method.
 This approach would be idiomatic in C++, but it requires some facility with object-oriented programming that a non-expert might lack.
@@ -767,7 +767,8 @@ The numerical advantages of using variational principles are so great, however, 
 
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/ice-sheet/ice-sheet.png}
-    \caption{Synthetic ice sheet simulation: (a) the bed elevation profile consists of a ring of mountains with valleys of varying depth surrounding a flat plateau where the ice is initialized to (b) the change in thickness over the simulation period}
+    \caption{Synthetic ice sheet simulation. (a) The bed elevation profile consists of a ring of mountains with valleys of varying depth surrounding a flat plateau where the ice sheet is initialized.
+    The black square outlines the domain of subplot (b) which shows the velocity of the ice as it passes through the southernmost mountain pass, with contours of the bed elevation shown in greyscale.}
     \label{fig:ice-sheet}
 \end{figure}
 

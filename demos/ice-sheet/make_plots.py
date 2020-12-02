@@ -31,20 +31,41 @@ with firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ) as chk:
 
 δh = firedrake.interpolate(h - h0, Q)
 
-fig, axes = icepack.plot.subplots(ncols=2, sharex=True, sharey=True)
+fig, axes = icepack.plot.subplots(ncols=2)
 
 axes[0].set_ylabel('distance (meters)')
 for ax in axes:
     ax.get_xaxis().set_visible(False)
 
+xmin, xmax = -50e3, +50e3
+ymin, ymax = -175e3, -75e3
+
 axes[0].set_title('Bed elevation')
 colors = icepack.plot.tripcolor(b, cmap='magma', axes=axes[0])
-fig.colorbar(colors, ax=axes[0], orientation='horizontal', pad=0.02)
-
-axes[1].set_title('Thickness change')
-colors = icepack.plot.tripcolor(
-    δh, vmin=-200, vmax=200, axes=axes[1], cmap='twilight'
+fig.colorbar(
+    colors, label='meters', ax=axes[0], orientation='horizontal', pad=0.02
 )
-fig.colorbar(colors, ax=axes[1], orientation='horizontal', pad=0.02)
+axes[0].plot(
+    [xmin, xmax, xmax, xmin, xmin],
+    [ymin, ymin, ymax, ymax, ymin],
+    color='k'
+)
+
+axes[1].set_title('Velocity')
+axes[1].set_xlim(xmin, xmax)
+axes[1].set_ylim(ymin, ymax)
+axes[1].yaxis.set_label_position('right')
+axes[1].yaxis.tick_right()
+firedrake.tricontour(b, 20, cmap='Greys', axes=axes[1])
+streamlines = firedrake.streamplot(
+    u, resolution=5e3, cmap='magma', seed=1, axes=axes[1]
+)
+fig.colorbar(
+    streamlines,
+    label='meters / year',
+    ax=axes[1],
+    orientation='horizontal',
+    pad=0.02
+)
 
 fig.savefig(args.output, bbox_inches='tight')
