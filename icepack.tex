@@ -785,7 +785,7 @@ In and upstream of the valleys, the surface is drawn down due to the elevated ex
 
 The diagnostic model used in this demonstration is cheap enough that it can be used to simulate ice sheets over several millenia in a matter of minutes on a desktop.
 A key feature of icepack is the ability to choose between many different diagnostic models.
-Users are free to decide whichever model is most appropriate for the spatial and temporal scales of their problem.
+Users are free to decide what model works best for the spatial and temporal scales of their problem, how accurately they need to solve this problem to produce useful results, and what computational resources they are willing to devote.
 
 
 \subsection{Synthetic ice shelf}
@@ -935,7 +935,35 @@ If the solver fails to converge, it might not be obvious even to an expert wheth
 
 \section{Discussion}
 
+We have presented a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
+This package advances the state of the art in this field by providing a platform for easily experimenting with the model physics.
+In this paper, we have presented three demonstrations of this feature:
+\begin{enumerate}
+    \item coupling a model of ice shelf flow to a phenomenological model of damage,
+    \item changing the sliding law in a simulation of a marine-terminating glacier, and
+    \item inferring the fluidity of a floating ice shelf in a way that guarantees positivity.
+\end{enumerate}
+The phyics both of how glaciers flow and of how they interact with their environment are not completely understood.
+Consequently, the ability to change components of the model is an essential feature for any tool aimed at researchers in this field.
 
+We have also paid special attention to how we can design this software package to be most usable for its intended audience.
+Usability is not often discussed in the literature on computational science.
+We believe that this is because of two difficulties: (1) quantifying the degree to which usability is a rate-limiting factor and (2) concretely assessing what features make software tools more or less usable.
+By contrast, measuring computational performance is much more feasible although still fraught with difficulties of its own.
+(This is not to say that performance optimization is easy by any means.)
+In working with several graduate students and postdoctoral researchers in glaciology, we have observed that usability is a substantial bottleneck for researchers at these career stages.
+For this reason, we have chosen to focus explicitly on usability by drawing on the research literature in HCI.
+We argue that the same design features that enhance usability for relative novices to the subject area will also enhance the productivity of expert users.
+
+This paper has presented several physics models currently implemented in icepack along with demonstrations.
+Future developments will include:
+\begin{enumerate}
+    \item an implementation of full Stokes flow
+    \item dynamic glacier termini to enable calving models
+    \item adaptivity through moving mesh methods
+\end{enumerate}
+New features will be guided by feedback from icepack users and from the glaciological community at large.
+By providing implementations of several glacier flow models from less to more complex and by enabling users to experiment with the physics, this tool both lowers the barrier to entry for novices to glacier flow modeling and provides a pathway for these users to progress towards ever more sophisticated and advanced simulations.
 
 \bibliographystyle{plainnat}
 \bibliography{icepack.bib}
