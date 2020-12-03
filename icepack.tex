@@ -172,7 +172,8 @@ We have not implemented this feature but support for non-hydrostatic ice shelves
 \subsection{Diagnostic model}
 
 There are four \emph{diagnostic} or \emph{momentum transport} models implemented in icepack.
-See \citet{dukowicz2010consistent} for a thorough explanation of the various approximations and action principles velow.
+For each of the diagnostic models, we use a formulation of the physics based on a \emph{minimization} or \emph{action principle} \citep{dukowicz2010consistent}.
+Action principles are completely equivalent to the usual weak form of a partial differential equation but have certain numerical advantages that we will describe below.
 
 The most complex and most physically accurate model is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
 (In icepack we refer to our implementation of this equation as a \emph{hybrid model} as it includes both shear and plug flow modes, described below.)
@@ -895,8 +896,8 @@ Users already familiar with, say, the \texttt{IceStream} class can then use the 
 Consistency obviates the need for repeatedly consulting the documentation or examples once users are already familiar with the software.
 
 \textbf{Progressive evaluation: How easily can users get feedback during their use of the software?}
-Progressive evaluation is the main advantage of having a user interface in an interpreted programming language such as Python as opposed to a compiled language where programs run in batch mode.
-All non-trivial simulations of physical systems begin life broken.
+Progressive evaluation is the main advantage of having a user interface in an interpreted programming language such as Python as opposed to a compiled language where programs can only run in batch mode.
+In the early stages of the development process, any non-trivial simulation of a physical system exists as a prototype which may be non-functional or even broken.
 The ability to manually step through a simulation and examine the entire state in an interpreter is critical to finding errors faster.
 Icepack was designed to give fine-grained control over how simulations work in order to support this mode of debugging.
 The API provides routines for solving the diagnostic and prognostic equations.
@@ -909,7 +910,7 @@ Other packages support a more coarse-grained view where the user only specifies 
 Icepack makes extensive use of Jupyter notebooks as a form of executable documentation.
 Jupyter notebooks are a document format that includes code and explanatory text with typeset mathematics that runs interactively in a web browser \citep{kluyver2016jupyter}.
 The contents of a notebook can executed incrementally much like running code in the Python interpreter.
-Most importantly, Jupyter notebooks will render and display visualizations on the fly.
+Most importantly, Jupyter notebooks can render and display visualizations on the fly.
 This enables a workflow where plotting all intermediate results serves for sanity-checking an experimental simulation.
 
 \textbf{Abstraction gradient: What are the levels of abstraction exposed by the library?
