@@ -51,8 +51,10 @@ f_c = 4e3
 d_c = 500
 w_c = 24e3
 
-B_y = d_c * (1 / (1 + exp(-2 * (y - Ly/2 - w_c) / f_c)) +
-             1 / (1 + exp(2 * (y - Ly / 2 + w_c) / f_c)))
+B_y = d_c * (
+    1 / (1 + exp(-2 * (y - Ly / 2 - w_c) / f_c)) +
+    1 / (1 + exp(+2 * (y - Ly / 2 + w_c) / f_c))
+)
 
 z_deep = -720
 z_b = interpolate(max_value(B_x + B_y, z_deep), Q)
@@ -72,7 +74,8 @@ from icepack.constants import (
 )
 
 def friction(**kwargs):
-    u, h, s, C = map(kwargs.get, ('velocity', 'thickness', 'surface', 'friction'))
+    keys = ('velocity', 'thickness', 'surface', 'friction')
+    u, h, s, C = map(kwargs.get, keys)
 
     p_W = ρ_W * g * max_value(0, -(s - h))
     p_I = ρ_I * g * h
@@ -82,11 +85,21 @@ def friction(**kwargs):
     u_c = (τ_c / C)**m
     u_b = sqrt(inner(u, u))
 
-    return τ_c * ((u_c**(1/m + 1) + u_b**(1/m + 1))**(m / (m + 1)) - u_c)
+    return τ_c * ((u_c**(1 / m + 1) + u_b**(1 / m + 1))**(m / (m + 1)) - u_c)
 
 # Create the model object and extra options
 model = icepack.models.IceStream(friction=friction)
-opts = {'dirichlet_ids': [1], 'side_wall_ids': [3, 4], 'tolerance': 1e-8}
+opts = {
+    'dirichlet_ids': [1],
+    'side_wall_ids': [3, 4],
+    'diagnostic_solver_type': 'petsc',
+    'diagnostic_solver_parameters': {
+        'snes_type': 'newtontr',
+        'ksp_type': 'preonly',
+        'pc_type': 'lu',
+        'pc_factor_mat_solver_type': 'mumps'
+    }
+}
 solver = icepack.solvers.FlowSolver(model, **opts)
 
 # Read the input data if there is any
