@@ -1,66 +1,143 @@
-\documentclass{article}
+%% Copernicus Publications Manuscript Preparation Template for LaTeX Submissions
+%% ---------------------------------
+%% This template should be used for copernicus.cls
+%% The class file and some style files are bundled in the Copernicus Latex Package, which can be downloaded from the different journal webpages.
+%% For further assistance please contact Copernicus Publications at: production@copernicus.org
+%% https://publications.copernicus.org/for_authors/manuscript_preparation.html
 
-\usepackage{amsmath}
-%\usepackage{amsfonts}
-\usepackage{amsthm}
-%\usepackage{amssymb}
-%\usepackage{mathrsfs}
-%\usepackage{fullpage}
-%\usepackage{mathptmx}
-%\usepackage[varg]{txfonts}
-\usepackage{natbib}
-\usepackage{color}
-\usepackage[charter]{mathdesign}
-\usepackage[pdftex]{graphicx}
+
+%% Please use the following documentclass and journal abbreviations for preprints and final revised papers.
+
+%% 2-column papers and preprints
+\documentclass[journal abbreviation, manuscript]{copernicus}
+
+
+
+%% Journal abbreviations (please use the same for preprints and final revised papers)
+
+
+% Advances in Geosciences (adgeo)
+% Advances in Radio Science (ars)
+% Advances in Science and Research (asr)
+% Advances in Statistical Climatology, Meteorology and Oceanography (ascmo)
+% Annales Geophysicae (angeo)
+% Archives Animal Breeding (aab)
+% ASTRA Proceedings (ap)
+% Atmospheric Chemistry and Physics (acp)
+% Atmospheric Measurement Techniques (amt)
+% Biogeosciences (bg)
+% Climate of the Past (cp)
+% DEUQUA Special Publications (deuquasp)
+% Drinking Water Engineering and Science (dwes)
+% Earth Surface Dynamics (esurf)
+% Earth System Dynamics (esd)
+% Earth System Science Data (essd)
+% E&G Quaternary Science Journal (egqsj)
+% European Journal of Mineralogy (ejm)
+% Fossil Record (fr)
+% Geochronology (gchron)
+% Geographica Helvetica (gh)
+% Geoscience Communication (gc)
+% Geoscientific Instrumentation, Methods and Data Systems (gi)
+% Geoscientific Model Development (gmd)
+% History of Geo- and Space Sciences (hgss)
+% Hydrology and Earth System Sciences (hess)
+% Journal of Bone and Joint Infection (jbji)
+% Journal of Micropalaeontology (jm)
+% Journal of Sensors and Sensor Systems (jsss)
+% Magnetic Resonance (mr)
+% Mechanical Sciences (ms)
+% Natural Hazards and Earth System Sciences (nhess)
+% Nonlinear Processes in Geophysics (npg)
+% Ocean Science (os)
+% Primate Biology (pb)
+% Proceedings of the International Association of Hydrological Sciences (piahs)
+% Scientific Drilling (sd)
+% SOIL (soil)
+% Solid Earth (se)
+% The Cryosphere (tc)
+% Weather and Climate Dynamics (wcd)
+% Web Ecology (we)
+% Wind Energy Science (wes)
+
+
+%% \usepackage commands included in the copernicus.cls:
+%\usepackage[german, english]{babel}
+%\usepackage{tabularx}
+%\usepackage{cancel}
+%\usepackage{multirow}
+%\usepackage{supertabular}
+%\usepackage{algorithmic}
+%\usepackage{algorithm}
+%\usepackage{amsthm}
 %\usepackage{float}
-%\usepackage{hyperref}
-%\usepackage[modulo, displaymath, mathlines]{lineno}
-%\usepackage{setspace}
-%\usepackage[titletoc,toc,title]{appendix}
-\usepackage{lineno}
-\linenumbers
-%\doublespacing
+%\usepackage{subfig}
+%\usepackage{rotating}
 
-\theoremstyle{definition}
-\newtheorem*{defn}{Definition}
-\newtheorem*{exm}{Example}
-
-\theoremstyle{plain}
-\newtheorem*{thm}{Theorem}
-\newtheorem*{lem}{Lemma}
-\newtheorem*{prop}{Proposition}
-\newtheorem*{cor}{Corollary}
-
-\newcommand{\argmin}{\text{argmin}}
-\newcommand{\ud}{\hspace{2pt}\mathrm{d}}
-\newcommand{\bs}{\boldsymbol}
-\newcommand{\PP}{\mathsf{P}}
-
-\title{\emph{icepack}: a novel glacier flow modeling package}
-\author{Daniel Shapero, Jessica Badgeley, Andrew Hoffmann}
-\date{}
 
 \begin{document}
 
-\tableofcontents
-\newpage
+\title{\emph{icepack}: a new glacier flow modeling package in Python, version 1.0}
+
+
+% \Author[affil]{given_name}{surname}
+
+\Author[1]{Daniel}{Shapero}
+\Author[2]{Jessica}{Badgeley}
+\Author[2]{Andrew}{Hoffmann}
+
+\affil[1]{Polar Science Center, Applied Physics Laboratory, University of Washington, Seattle, WA, USA}
+\affil[2]{Department of Earth and Space Sciences, University of Washington, Seattle, WA, USA}
+
+%% The [] brackets identify the author with the corresponding affiliation. 1, 2, 3, etc. should be inserted.
+
+%% If an author is deceased, please mark the respective author name(s) with a dagger, e.g. "\Author[2,$\dag$]{Anton}{Aman}", and add a further "\affil[$\dag$]{deceased, 1 July 2019}".
+
+%% If authors contributed equally, please mark the respective author names with an asterisk, e.g. "\Author[2,*]{Anton}{Aman}" and "\Author[3,*]{Bradley}{Bman}" and add a further affiliation: "\affil[*]{These authors contributed equally to this work.}".
+
+
+\correspondence{Daniel Shapero (shapero@uw.edu)}
+
+\runningtitle{icepack}
+
+\runningauthor{Shapero, Badgeley, Hoffmann}
+
+
+
+
+
+\received{}
+\pubdiscuss{} %% only important for two-stage journals
+\revised{}
+\accepted{}
+\published{}
+
+%% These dates will be inserted by Copernicus Publications during the typesetting process.
+
+
+\firstpage{1}
 
 \maketitle
 
+
+
 \begin{abstract}
-In this paper we introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
+We introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
 Icepack is built on the finite element modeling library Firedrake, which uses the domain-specific language UFL for describing weak forms of partial differential equations.
 The diagnostic models in icepack are formulated through action principles that are specified in UFL.
 The components of each action functional can be substituted for different forms of the user's choosing, which makes it easy to experiment with the model physics.
-Many post-processing and analysis tasks on simulation results also amount to the evaluation of some functional.
-By using a variational formulation of the model physics, the specification of a problem and the analysis of the solution employ the same conceptual vocabulary.
-A third advantage of variational principles is that the action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
-Icepack includes the 2D shallow ice and shallow stream models and a novel implementation of the 3D Blatter-Pattyn model.
+The action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
+Icepack includes the 2D shallow ice and shallow stream models.
+We have also defined a 3D hybrid model based on spectral semi-discretization of the Blatter-Pattyn equations.
 Finally, icepack implements a Gauss-Newton solver for inverse problems that runs substantially faster than the standard BFGS method used in the glaciological literature.
 The overall design philosophy of icepack is to be as usable as possible for a wide a swathe of the glaciological community, including both experts and novices in computational science.
 \end{abstract}
 
-\section{Introduction}
+
+% \copyrightstatement{TEXT} %% This section is optional and can be used for copyright transfers.
+
+
+\introduction  %% \introduction[modified heading if necessary]
 
 Numerical modeling has become an essential part of the workflow of glaciologists across all disciplines.
 We highlight four main uses of glacier models in the literature:
@@ -89,7 +166,7 @@ Additionally, having a high-level symbolic description of the problem makes it p
 
 Icepack improves upon the groundwork laid in VarGlaS in three main respects.
 First, icepack includes a simple 3D flow model that uses several features only available in Firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
-This model will be described in section \S\ref{sec:physics-hybrid-model}.
+This model will be described in section \ref{sec:physics-hybrid-model}.
 Second, the architecture of icepack is designed to make it easy for users to alter the various physics components, such as the rheology and basal friction, of any of the models included.
 The software design that made this possible is discussed in section \S\ref{sec:physics-substitution}.
 Finally, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS; see section \S\ref{sec:numerics-inverse-solvers}.
@@ -204,11 +281,11 @@ All of the diagnostic models in icepack are described through \emph{variational}
 Rather than describe the velocity as the weak solution of a nonlinear PDE, an action principle instead states that the velocity minimizes a functional called the action.
 The action consists of four terms:
 \begin{align}
-    & \text{action} = \iint\text{stress} \times \text{strain rate}\ud z\ud x - \int\text{basal friction} \times \text{sliding velocity}\ud x \nonumber \\
-    & \quad - \iint\text{surface slope}\times\text{velocity}\ud z\ud x - \iint\text{ocean pressure}\times\text{velocity}\ud z\ud \gamma
+    & \text{action} = \iint\text{stress} \times \text{strain rate}\,dz\,dx - \int\text{basal friction} \times \text{sliding velocity}\,dx \nonumber \\
+    & \quad - \iint\text{surface slope}\times\text{velocity}\,dz\,dx - \iint\text{ocean pressure}\times\text{velocity}\,dz\,d\gamma
     \label{action-functional}
 \end{align}
-where $\ud z\ud x$ denotes integration over the entire glacier, $\ud x$ denotes integration over the glacier footprint, and $\ud z\ud\gamma$ over the side wall boundary.
+where $dz\,dx$ denotes integration over the entire glacier, $dx$ denotes integration over the glacier footprint, and $dz\,d\gamma$ over the side wall boundary.
 The action has units of power (energy/time) and can be related to the rate of decrease of the thermodynamic free energy.
 Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
 The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
@@ -228,9 +305,9 @@ The result is a 2D system of equations for depth-averaged horizontal velocity.
 The class in icepack that represents this physics model is called \texttt{ShallowIce}.
 The terms in the action functional are:
 \begin{align}
-    \text{mass} & =\frac{1}{2}\int_\Omega u\cdot u\ud x\\\
-    \text{gravity} & = \int_\Omega\frac{2A(\rho_I g)^n}{n+2} h^{n + 1}|\nabla s|^{n - 1}\nabla s\cdot u\ud x\\
-    \text{penalty} & = \frac{1}{2}\int_\Omega \ell^2\nabla u\cdot \nabla u\ud x
+    \text{mass} & =\frac{1}{2}\int_\Omega u\cdot u\,dx\\\
+    \text{gravity} & = \int_\Omega\frac{2A(\rho_I g)^n}{n+2} h^{n + 1}|\nabla s|^{n - 1}\nabla s\cdot u\,dx\\
+    \text{penalty} & = \frac{1}{2}\int_\Omega \ell^2\nabla u\cdot \nabla u\,dx
 \end{align}
 and the action fuctional is
 \begin{equation}
@@ -255,10 +332,10 @@ The momentum equations can, again, be vertically integrated to obtain a 2D syste
 The class in icepack that represents this physics model is called \texttt{IceStream}.
 The terms in the action functional are:
 \begin{align}
-    \text{viscosity} & = \frac{n}{n + 1}\int_\Omega hA^{-\frac{1}{n}}|\dot\varepsilon(u)|^{\frac{1}{n} + 1}\ud x \\
-    \text{friction} & = \frac{m}{m + 1}\int_\Omega C|u|^{\frac{1}{m} + 1}\ud x \\
-    \text{gravity} & = -\int_\Omega\rho_I gh\nabla s\cdot u\ud x \\
-    \text{terminus} & = \frac{1}{2}\int_\Gamma(\rho_I gh^2 - \rho_Wgd^2)u\cdot \nu\ud\gamma
+    \text{viscosity} & = \frac{n}{n + 1}\int_\Omega hA^{-\frac{1}{n}}|\dot\varepsilon(u)|^{\frac{1}{n} + 1}dx \\
+    \text{friction} & = \frac{m}{m + 1}\int_\Omega C|u|^{\frac{1}{m} + 1}dx \\
+    \text{gravity} & = -\int_\Omega\rho_I gh\nabla s\cdot u\,dx \\
+    \text{terminus} & = \frac{1}{2}\int_\Gamma(\rho_I gh^2 - \rho_Wgd^2)u\cdot \nu\,d\gamma
 \end{align}
 and the action functional is
 \begin{equation}
@@ -456,7 +533,7 @@ These kinds of simplified models ignore complications such as inertial or 3D eff
 They are intended more to capture some important features of the real physical system ecnomically than to describe it exactly.
 
 
-\section{Data assimilation} \label{sec:data-assimilation}
+\section{Data assimilation}
 
 Icepack includes a set of routines for estimating the basal friction or rheology coefficients from observational data.
 The class \texttt{InverseProblem} represents the specification of an inverse problem, which requires:
@@ -535,7 +612,7 @@ This property is also especially advantageous for implementing numerical solvers
 We use a damped Newton method to solve the diagnostic equations.
 Starting from a guess $u_k$ for the velocity, the \emph{search direction} $v_k$ is the unique solution of the linear system
 \begin{equation}
-    \ud^2J(u_k)\cdot v_k = -\ud J(u_k).
+    d^2J(u_k)\cdot v_k = -dJ(u_k).
     \label{eq:newton-search-direction}
 \end{equation}
 The next approximation for the velocity minimizes $J$ along the search direction $v_k$ starting from $u_k$, i.e.
@@ -546,7 +623,7 @@ The next approximation for the velocity minimizes $J$ along the search direction
 For an initial guess sufficiently close to the exact solution, the undamped Newton method ($\alpha_k = 1$ at every step) converges quadratically.
 The line search step ensures that the method can converge even from a poor initial guess, provided that the line search method satisfies the Armijo-Wolfe criteria \citep{nocedal2006numerical}.
 
-For a convex problem, $\ud^2J$ is a symmetric and positive-definite matrix.
+For a convex problem, $d^2J$ is a symmetric and positive-definite matrix.
 This has two advantages.
 First, the search direction is always a descent direction for $J$.
 For non-convex problems this is not always the case and some adaptation strategy must be employed in the vicinity of saddle points.
@@ -572,14 +649,14 @@ The residual norm depends on the discretization and does not weight all degrees 
 The relative change criterion, on the other hand, can suggest convergence when in fact the method has stagnated.
 
 A convergence criterion that works equally well independent of the mesh, finite element discretization, and the quality of the initial guess can be defined based on the idea of the \emph{Newton decrement} \citep{nocedal2006numerical}.
-Since the second derivative operator $\ud^2J(u_k)$ is positive-definite, the Newton search direction $v_k$ computed from equation \eqref{eq:newton-search-direction} is a descent direction for $J$:
+Since the second derivative operator $d^2J(u_k)$ is positive-definite, the Newton search direction $v_k$ computed from equation \eqref{eq:newton-search-direction} is a descent direction for $J$:
 \begin{equation}
-    \ud J(u_k)\cdot v_k < 0.
+    dJ(u_k)\cdot v_k < 0.
 \end{equation}
 The absolute value of the quantity in the last equation is defined as the Newton decrement.
 For $u_k$ sufficiently close to the true solution $u$, the Newton decrement roughly tells us how much we can expect the action to decrease:
 \begin{equation}
-    J(u_k) - J(u) \approx \frac{1}{2}|\ud J(u_k)\cdot v_k|.
+    J(u_k) - J(u) \approx \frac{1}{2}|dJ(u_k)\cdot v_k|.
 \end{equation}
 We can then use the Newton decrement to decide when to stop the iteration.
 
@@ -592,7 +669,7 @@ If we define the \emph{scale functional}
 \end{equation}
 as only the positive parts of the action, then the convergence criterion
 \begin{equation}
-    |\ud J(u_k)\cdot v_k| < \epsilon K(u_k)
+    |dJ(u_k)\cdot v_k| < \epsilon K(u_k)
 \end{equation}
 is independent of the discretization.
 The intuition behind this criterion is that the iteration is halted when the expected decrease in the action functional is much smaller than the positive part of the action itself.
@@ -617,7 +694,7 @@ They differ in how the search direction is computed.
 
 The gradient descent solver uses the search direction
 \begin{equation}
-    \phi_k = -M^{-1}\ud J(\theta_k)
+    \phi_k = -M^{-1}dJ(\theta_k)
 \end{equation}
 where $M$ is the finite element mass matrix.
 Gradient descent is a popular choice because the objective functional is always decreasing along this search direction.
@@ -669,7 +746,7 @@ Our approach for implementing a hybrid flow model works completely seamlessly bu
 The backpressure from ocean water at the calving front of a marine-terminating glacier is not a smooth function of depth.
 The pressure is 0 above the water line and linearly increasing below it:
 \begin{equation}
-    \text{backpressure power} = \int_\Gamma\int_0^1 \rho_Wgh(\zeta_{\text{sl}} - \zeta)_+\ud\zeta\ud\gamma,
+    \text{backpressure power} = \int_\Gamma\int_0^1 \rho_Wgh(\zeta_{\text{sl}} - \zeta)_+\,d\zeta\,d\gamma,
     \label{backpressure}
 \end{equation}
 where $\zeta_{\text{sl}}$ denotes the relative depth to the water line and the subscript $+$ denotes the positive part of a real number.
@@ -852,7 +929,7 @@ The velocity measurements themselves might have significant outliers, in which c
 For these reasons, some studies have explored alternative objective functionals \citep{morlighem2010spatial}.
 We have opted to use the regularized $L^1$-type error metric
 \begin{equation}
-    E(u - u^o) = \int_\Omega\left(\sqrt{\frac{|u - u^o|^2}{\sigma^2} + \gamma^2} - \gamma\right)\ud x.
+    E(u - u^o) = \int_\Omega\left(\sqrt{\frac{|u - u^o|^2}{\sigma^2} + \gamma^2} - \gamma\right)dx.
     \label{eq:l1-error-metric}
 \end{equation}
 This error metric approaches the usual weighted sum of squared errors as $\gamma \to \infty$, and approaches the sparsity-promoting $L^1$ error metric as $\gamma \to 0$.
@@ -950,7 +1027,7 @@ Determining exactly what value of this parameter is necessary to guarantee stabi
 If the solver fails to converge, it might not be obvious even to an expert whether the problem lies with the stabilization or the aforementioned parameters of the linear solver.
 
 
-\section{Discussion}
+\conclusions  %% \conclusions[modified heading if necessary]
 
 We have presented a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
 This package advances the state of the art in this field by providing a platform for easily experimenting with the model physics.
@@ -982,7 +1059,245 @@ Future developments will include:
 New features will be guided by feedback from icepack users and from the glaciological community at large.
 By providing implementations of several glacier flow models from less to more complex and by enabling users to experiment with the physics, this tool both lowers the barrier to entry for novices to glacier flow modeling and provides a pathway for these users to progress towards ever more sophisticated and advanced simulations.
 
-\bibliographystyle{plainnat}
+
+%% The following commands are for the statements about the availability of data sets and/or software code corresponding to the manuscript.
+%% It is strongly recommended to make use of these sections in case data sets and/or software code have been part of your research the article is based on.
+
+
+\codedataavailability{
+All code used in this repository is free and open source and all data sets used in the demonstrations are publicly available.
+The icepack source repository is at https://github.com/icepack/icepack and the git commit hash of the version of the code used for this publication is 250490a528c4abe473825bebbc823b2de0c43000.
+The demonstrations used glacier outlines that were hand-digitized from satellite imagery in order to generate the model domains.
+These outlines are kept in version control and hosted at https://github.com/icepack/glacier-meshes and the git commit hash for the version used in this publication is c98a8b7536b1891611566257d944e5ea024f2cdf.
+Additional observational data are hosted at the US National Snow and Ice Data Center (https://www.nsidc.org).
+}
+
+\appendix
+\section{}    %% Appendix A
+
+\subsection{}     %% Appendix A1, A2, etc.
+
+
+\noappendix       %% use this to mark the end of the appendix section. Otherwise the figures might be numbered incorrectly (e.g. 10 instead of 1).
+
+%% Regarding figures and tables in appendices, the following two options are possible depending on your general handling of figures and tables in the manuscript environment:
+
+%% Option 1: If you sorted all figures and tables into the sections of the text, please also sort the appendix figures and appendix tables into the respective appendix sections.
+%% They will be correctly named automatically.
+
+%% Option 2: If you put all figures after the reference list, please insert appendix tables and figures after the normal tables and figures.
+%% To rename them correctly to A1, A2, etc., please add the following commands in front of them:
+
+\appendixfigures  %% needs to be added in front of appendix figures
+
+\appendixtables   %% needs to be added in front of appendix tables
+
+%% Please add \clearpage between each table and/or figure. Further guidelines on figures and tables can be found below.
+
+
+
+\authorcontribution{
+DS designed and implemented icepack with contributions from JB and AH.
+All authors contributed to the demonstration codes and to writing this paper.
+} %% this section is mandatory
+
+\competinginterests{
+All authors declare that they have no competing interests.
+} %% this section is mandatory even if you declare that no competing interests are present
+
+\begin{acknowledgements}
+We would like thank Ian Joughin for testing the model and for many valuable discussions.
+\end{acknowledgements}
+
+
+
+
+%% REFERENCES
+
+%% The reference list is compiled as follows:
+
+%\begin{thebibliography}{}
+
+%\bibitem[AUTHOR(YEAR)]{LABEL1}
+%REFERENCE 1
+
+%\bibitem[AUTHOR(YEAR)]{LABEL2}
+%REFERENCE 2
+
+%\end{thebibliography}
+
+%% Since the Copernicus LaTeX package includes the BibTeX style file copernicus.bst,
+%% authors experienced with BibTeX only have to include the following two lines:
+%%
+\bibliographystyle{copernicus}
 \bibliography{icepack.bib}
+%%
+%% URLs and DOIs can be entered in your BibTeX file as:
+%%
+%% URL = {http://www.xyz.org/~jones/idx_g.htm}
+%% DOI = {10.5194/xyz}
+
+
+%% LITERATURE CITATIONS
+%%
+%% command                        & example result
+%% \citet{jones90}|               & Jones et al. (1990)
+%% \citep{jones90}|               & (Jones et al., 1990)
+%% \citep{jones90,jones93}|       & (Jones et al., 1990, 1993)
+%% \citep[p.~32]{jones90}|        & (Jones et al., 1990, p.~32)
+%% \citep[e.g.,][]{jones90}|      & (e.g., Jones et al., 1990)
+%% \citep[e.g.,][p.~32]{jones90}| & (e.g., Jones et al., 1990, p.~32)
+%% \citeauthor{jones90}|          & Jones et al.
+%% \citeyear{jones90}|            & 1990
+
+
+
+%% FIGURES
+
+%% When figures and tables are placed at the end of the MS (article in one-column style), please add \clearpage
+%% between bibliography and first table and/or figure as well as between each table and/or figure.
+
+% The figure files should be labelled correctly with Arabic numerals (e.g. fig01.jpg, fig02.png).
+
+
+%% ONE-COLUMN FIGURES
+
+%%f
+%\begin{figure}[t]
+%\includegraphics[width=8.3cm]{FILE NAME}
+%\caption{TEXT}
+%\end{figure}
+%
+%%% TWO-COLUMN FIGURES
+%
+%%f
+%\begin{figure*}[t]
+%\includegraphics[width=12cm]{FILE NAME}
+%\caption{TEXT}
+%\end{figure*}
+%
+%
+%%% TABLES
+%%%
+%%% The different columns must be seperated with a & command and should
+%%% end with \\ to identify the column brake.
+%
+%%% ONE-COLUMN TABLE
+%
+%%t
+%\begin{table}[t]
+%\caption{TEXT}
+%\begin{tabular}{column = lcr}
+%\tophline
+%
+%\middlehline
+%
+%\bottomhline
+%\end{tabular}
+%\belowtable{} % Table Footnotes
+%\end{table}
+%
+%%% TWO-COLUMN TABLE
+%
+%%t
+%\begin{table*}[t]
+%\caption{TEXT}
+%\begin{tabular}{column = lcr}
+%\tophline
+%
+%\middlehline
+%
+%\bottomhline
+%\end{tabular}
+%\belowtable{} % Table Footnotes
+%\end{table*}
+%
+%%% LANDSCAPE TABLE
+%
+%%t
+%\begin{sidewaystable*}[t]
+%\caption{TEXT}
+%\begin{tabular}{column = lcr}
+%\tophline
+%
+%\middlehline
+%
+%\bottomhline
+%\end{tabular}
+%\belowtable{} % Table Footnotes
+%\end{sidewaystable*}
+%
+%
+%%% MATHEMATICAL EXPRESSIONS
+%
+%%% All papers typeset by Copernicus Publications follow the math typesetting regulations
+%%% given by the IUPAC Green Book (IUPAC: Quantities, Units and Symbols in Physical Chemistry,
+%%% 2nd Edn., Blackwell Science, available at: http://old.iupac.org/publications/books/gbook/green_book_2ed.pdf, 1993).
+%%%
+%%% Physical quantities/variables are typeset in italic font (t for time, T for Temperature)
+%%% Indices which are not defined are typeset in italic font (x, y, z, a, b, c)
+%%% Items/objects which are defined are typeset in roman font (Car A, Car B)
+%%% Descriptions/specifications which are defined by itself are typeset in roman font (abs, rel, ref, tot, net, ice)
+%%% Abbreviations from 2 letters are typeset in roman font (RH, LAI)
+%%% Vectors are identified in bold italic font using \vec{x}
+%%% Matrices are identified in bold roman font
+%%% Multiplication signs are typeset using the LaTeX commands \times (for vector products, grids, and exponential notations) or \cdot
+%%% The character * should not be applied as mutliplication sign
+%
+%
+%%% EQUATIONS
+%
+%%% Single-row equation
+%
+%\begin{equation}
+%
+%\end{equation}
+%
+%%% Multiline equation
+%
+%\begin{align}
+%& 3 + 5 = 8\\
+%& 3 + 5 = 8\\
+%& 3 + 5 = 8
+%\end{align}
+%
+%
+%%% MATRICES
+%
+%\begin{matrix}
+%x & y & z\\
+%x & y & z\\
+%x & y & z\\
+%\end{matrix}
+%
+%
+%%% ALGORITHM
+%
+%\begin{algorithm}
+%\caption{...}
+%\label{a1}
+%\begin{algorithmic}
+%...
+%\end{algorithmic}
+%\end{algorithm}
+%
+%
+%%% CHEMICAL FORMULAS AND REACTIONS
+%
+%%% For formulas embedded in the text, please use \chem{}
+%
+%%% The reaction environment creates labels including the letter R, i.e. (R1), (R2), etc.
+%
+%\begin{reaction}
+%%% \rightarrow should be used for normal (one-way) chemical reactions
+%%% \rightleftharpoons should be used for equilibria
+%%% \leftrightarrow should be used for resonance structures
+%\end{reaction}
+%
+%
+%%% PHYSICAL UNITS
+%%%
+%%% Please use \unit{} and apply the exponential notation
+
 
 \end{document}
