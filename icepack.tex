@@ -748,12 +748,27 @@ To change the sliding law, users only need to pass one function or the other to 
 Users do not need to implement a subclass that overrides some parent method.
 This approach would be idiomatic in C++, but it requires some facility with object-oriented programming that a non-expert might lack.
 
-Figure \ref{fig:mismip} shows the outcome of the MISMIP+ experiment performed using icepack.
+Figure \ref{fig:mismip-result} shows the thickness and ice speed after spinning up the MISMIP+ geometry and input data to steady state with the sliding law described above.
+The spin-up used used degree-1 basis functions for both thickness and velocity.
+To get a high-resolution estimate for the steady state, the spin-up started from a relatively coarse resolution to propagate out most of the transient signal.
+Then the mesh was successively refined and spun up again to propagate out the remaining high-wavenumber transients.
+This process was repeated three times.
+The net result is that most of the spin-up is done at relatively little computational cost.
+Figure \ref{fig:mismip-volumes} shows the total ice mass during the retreat and readvance phases of the experiment.
+The initial response to turning on melting is very rapid but then becomes roughly linear with time.
+When the high melt is turned off at the 100-year mark, the ice readvances, but the rate is much slower than the rate of decrease when melt was on.
+This asymmetric response is typical and expected from ice physics.
 
 \begin{figure}[h]
-    \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state.png}
+    \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state-result.png}
     \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the Weertman sliding law.}
-    \label{fig:mismip}
+    \label{fig:mismip-result}
+\end{figure}
+
+\begin{figure}[h]
+    \includegraphics[width=0.5\linewidth]{demos/mismip/volumes.png}
+    \caption{Total ice mass history during retreat (first 100 years) and readvance (second 100 years) of MISMIP+ experiment.}
+    \label{fig:mismip-volumes}
 \end{figure}
 
 Using variational principles to express all constitutive laws is less flexible than specifying the sliding law directly and this is a distinct disadvantage.

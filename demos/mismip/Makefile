@@ -1,6 +1,6 @@
 export mismip ?= .
 
-FIGURES += $(mismip)/steady-state.png $(mismip)/retreated.png $(mismip)/readvanced.png
+FIGURES += $(mismip)/steady-state-result.png $(mismip)/retreated-result.png $(mismip)/readvanced-result.png $(mismip)/volumes.png
 
 SCRIPT := $(mismip)/mismip+.py
 
@@ -57,5 +57,11 @@ $(mismip)/readvanced.h5: $(mismip)/retreated.h5 $(SCRIPT)
 	    --time 100 \
 	    --timestep 0.04166666666666666
 
-$(mismip)/%.png: $(mismip)/%.h5 $(mismip)/plot.py
-	python3 $(mismip)/plot.py --input $< --level 3 --output $@
+$(mismip)/%-result.png: $(mismip)/%.h5 $(mismip)/plot-result.py
+	python3 $(mismip)/plot-result.py --input $< --level 3 --output $@
+
+$(mismip)/volumes.png: $(mismip)/plot-volumes.py $(mismip)/readvanced.h5
+	python3 $(mismip)/plot-volumes.py \
+	    --output $@ \
+	    --retreated $(mismip)/retreated.h5 \
+	    --readvanced $(mismip)/readvanced.h5
