@@ -117,6 +117,9 @@ if args.input:
 
     input_name = os.path.splitext(args.input)[0]
     with firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ) as chk:
+        timesteps, indices = chk.get_timesteps()
+        chk.set_timestep(timesteps[-1], idx=indices[-1])
+
         chk.load(h_in, name='h')
         chk.load(u_in, name='u')
 
@@ -162,33 +165,38 @@ h_c0 = Constant(75.0)   # cut-off water column thickness
 δt = args.timestep
 num_steps = int(args.time / δt)
 
-trange = tqdm.trange(num_steps)
-for step in trange:
-    z_d = s - h             # elevation of the ice base
-    h_c = z_d - z_b         # water column thickness
-    melt = Ω * tanh(h_c / h_c0) * max_value(z_0 - z_d, 0)
-    a.interpolate(accumulation - melt)
-
-    h = solver.prognostic_solve(
-        δt, thickness=h, velocity=u, accumulation=a, thickness_inflow=h0
-    )
-    s = icepack.compute_surface(thickness=h, bed=z_b)
-
-    u = solver.diagnostic_solve(
-        velocity=u,
-        thickness=h,
-        surface=s,
-        fluidity=A,
-        friction=C
-    )
-
-    min_thickness = firedrake.COMM_WORLD.allreduce(h.dat.data_ro.min(), MPI.MIN)
-    avg_thickness = firedrake.assemble(h * dx) / area
-    msg = f"avg/min thickness: ({avg_thickness:4.2f}, {min_thickness:4.2f})"
-    trange.set_description(msg)
-
-# Write out the results
 output_name = os.path.splitext(args.output)[0]
 with firedrake.DumbCheckpoint(output_name, mode=firedrake.FILE_CREATE) as chk:
+    trange = tqdm.trange(num_steps)
+    for step in trange:
+        chk.set_timestep(step * δt)
+        chk.store(h, name='h')
+        chk.store(u, name='u')
+
+        z_d = s - h             # elevation of the ice base
+        h_c = z_d - z_b         # water column thickness
+        melt = Ω * tanh(h_c / h_c0) * max_value(z_0 - z_d, 0)
+        a.interpolate(accumulation - melt)
+
+        h = solver.prognostic_solve(
+            δt, thickness=h, velocity=u, accumulation=a, thickness_inflow=h0
+        )
+        s = icepack.compute_surface(thickness=h, bed=z_b)
+
+        u = solver.diagnostic_solve(
+            velocity=u,
+            thickness=h,
+            surface=s,
+            fluidity=A,
+            friction=C
+        )
+
+        hmin = h.dat.data_ro.min()
+        min_thickness = firedrake.COMM_WORLD.allreduce(hmin, MPI.MIN)
+        avg_thickness = firedrake.assemble(h * dx) / area
+        msg = f"avg/min thickness: ({avg_thickness:4.2f}, {min_thickness:4.2f})"
+        trange.set_description(msg)
+
+    chk.set_timestep(num_steps * δt)
     chk.store(h, name='h')
     chk.store(u, name='u')

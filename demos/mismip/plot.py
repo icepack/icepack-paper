@@ -24,9 +24,12 @@ h = firedrake.Function(Q)
 u = firedrake.Function(V)
 
 input_name = os.path.splitext(args.input)[0]
-chk = firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ)
-chk.load(h, name='h')
-chk.load(u, name='u')
+with firedrake.DumbCheckpoint(input_name, mode=firedrake.FILE_READ) as chk:
+    timesteps, indices = chk.get_timesteps()
+    chk.set_timestep(timesteps[-1], idx=indices[-1])
+
+    chk.load(h, name='h')
+    chk.load(u, name='u')
 
 fig, axes = icepack.plot.subplots(
     nrows=2, sharex=True, sharey=True, figsize=(6.4, 2.8)
