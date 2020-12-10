@@ -365,8 +365,7 @@ Each of these methods has appeared in the literature on glacier modeling before 
 \citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
 \citet{jouvet2015multilayer} used vertical semi-discretization of the variational problem, but this model used a finite difference discretization in the vertical direction.
 
-\paragraph{Terrain-following coordinates}
-
+\textbf{Terrain-following coordinates}.
 Rather than use the usual Cartesian coordinate system, the hybrid flow model uses terrain-following coordinates.
 The terrain-following vertical coordinate $\zeta$ is
 \begin{equation}
@@ -408,8 +407,7 @@ In other words, it is not immediately clear whether the vertical velocity is a r
 By contrast, the vertical velocity $\omega$ in terrain-following coordinates evaluated at $\zeta = 0$ is completely determined by basal mass balance and ice thickness.
 
 
-\paragraph{Spectral discretization}
-
+\textbf{Spectral discretization}.
 Terrain-following coordinates open up several choices for how to describe the vertical variation of the velocity field.
 In Elmer/Ice, for example, the user can extend the finite element discretization into a number of vertical layers.
 The number of vertical layers is a user-tuneable parameter, depending on the desired resolution along this axis \citep{gagliardini2013capabilities}.
@@ -1073,9 +1071,9 @@ Additional observational data are hosted at the US National Snow and Ice Data Ce
 }
 
 \appendix
-\section{}    %% Appendix A
+% \section{}    %% Appendix A
 
-\subsection{}     %% Appendix A1, A2, etc.
+% \subsection{}     %% Appendix A1, A2, etc.
 
 
 \noappendix       %% use this to mark the end of the appendix section. Otherwise the figures might be numbered incorrectly (e.g. 10 instead of 1).
@@ -1109,7 +1107,9 @@ All authors declare that they have no competing interests.
 We would like thank Ian Joughin for testing the model and for many valuable discussions.
 \end{acknowledgements}
 
-
+\textit{Financial support}.
+DS was supported by the US National Science Foundation (grant \#1835321) and the National Aeronautics and Space Administration (grant \#80NSSC20K0954).
+AH was supported by NASA (grant \#80NSSC20K1627).
 
 
 %% REFERENCES
