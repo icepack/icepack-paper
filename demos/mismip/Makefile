@@ -1,6 +1,6 @@
 export mismip ?= .
 
-FIGURES += $(mismip)/steady-state-result.png $(mismip)/retreated-result.png $(mismip)/readvanced-result.png $(mismip)/volumes.png
+FIGURES += $(mismip)/steady-state-result.png $(mismip)/retreated-result.png $(mismip)/readvanced-result.png $(mismip)/volumes.png $(mismip)/sliding-ratio.png
 
 SCRIPT := $(mismip)/mismip+.py
 
@@ -57,6 +57,14 @@ $(mismip)/readvanced.h5: $(mismip)/retreated.h5 $(SCRIPT)
 	    --time 100 \
 	    --timestep 0.04166666666666666
 
+$(mismip)/steady-state-level1-3d.h5: $(mismip)/steady-state-level1.h5 $(mismip)/mismip+3d.py
+	python3 $(mismip)/mismip+3d.py \
+	    --input $< \
+	    --output $@ \
+	    --level 1 \
+	    --time 3.6e3 \
+	    --timestep 2.0
+
 $(mismip)/%-result.png: $(mismip)/%.h5 $(mismip)/plot-result.py
 	python3 $(mismip)/plot-result.py --input $< --level 3 --output $@
 
@@ -65,3 +73,9 @@ $(mismip)/volumes.png: $(mismip)/plot-volumes.py $(mismip)/readvanced.h5
 	    --output $@ \
 	    --retreated $(mismip)/retreated.h5 \
 	    --readvanced $(mismip)/readvanced.h5
+
+$(mismip)/sliding-ratio.png: $(mismip)/steady-state-level1-3d.h5 $(mismip)/plot-3d.py
+	python3 $(mismip)/plot-3d.py \
+	    --output $@ \
+	    --input $< \
+	    --level 1

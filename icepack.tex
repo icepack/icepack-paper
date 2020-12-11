@@ -825,10 +825,10 @@ Although figure \ref{fig:sliding-laws} shows a comparison of both sliding laws w
     \label{fig:sliding-laws}
 \end{figure}
 
-The source code implementing both of these approaches is contained in the supplementary material.
 To change the sliding law, users only need to pass one function or the other to the model object at initialization.
+(See \emph{Code and data availability} below for the source code.)
 Users do not need to implement a subclass that overrides some parent method.
-This approach would be idiomatic in C++, but it requires some facility with object-oriented programming that a non-expert might lack.
+This approach would be idiomatic in C++, but it requires knowledge of object-oriented programming that a non-expert might lack.
 
 Figure \ref{fig:mismip-result} shows the thickness and ice speed after spinning up the MISMIP+ geometry and input data to steady state with the sliding law described above.
 The spin-up used used degree-1 basis functions for both thickness and velocity.
@@ -839,11 +839,17 @@ The net result is that most of the spin-up is done at relatively little computat
 Figure \ref{fig:mismip-volumes} shows the total ice mass during the retreat and readvance phases of the experiment.
 The initial response to turning on melting is very rapid but then becomes roughly linear with time.
 When the high melt is turned off at the 100-year mark, the ice readvances, but the rate is much slower than the rate of decrease when melt was on.
-This asymmetric response is typical and expected from ice physics.
+This asymmetric response is typical and expected from ice physics; the rates broadly agree with the reference results computed with BISICLES in the original experimental specification \citep{asay2016experimental}.
+
+We also ran the experimental setup to steady state using the hybrid flow model with vertical basis functions up to degree 2.
+This is the most minimal set of vertical basis functions that can resolve plug flow and the stress boundary conditions at the ice base and surface.
+The ratio of basal velocity to surface velocity is shown in figure \ref{fig:mismip-sliding-ratio}.
+The areas with the most significant vertical deformation are at the inflow boundary and where the troughs at the side walls are steepest.
+Otherwise, the sliding ratio is above 0.8 throughout almost the entire domain.
 
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/mismip/steady-state-result.png}
-    \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the Weertman sliding law.}
+    \caption{The steady state thickness and velocity of the MISMIP+ experimental setup with the modified Schoof sliding law of equation \eqref{eq:power-dissipation-modified-schoof-sliding}.}
     \label{fig:mismip-result}
 \end{figure}
 
@@ -851,6 +857,12 @@ This asymmetric response is typical and expected from ice physics.
     \includegraphics[width=0.5\linewidth]{demos/mismip/volumes.png}
     \caption{Total ice mass history during retreat (first 100 years) and readvance (second 100 years) of MISMIP+ experiment.}
     \label{fig:mismip-volumes}
+\end{figure}
+
+\begin{figure}[h]
+    \includegraphics[width=0.95\linewidth]{demos/mismip/sliding-ratio.png}
+    \caption{Ratio of basal velocity to surface velocity in steady state of MISMIP+ scenario computed with hybrid model.}
+    \label{fig:mismip-sliding-ratio}
 \end{figure}
 
 Using variational principles to express all constitutive laws is less flexible than specifying the sliding law directly and this is a distinct disadvantage.
