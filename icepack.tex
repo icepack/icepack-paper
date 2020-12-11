@@ -85,6 +85,7 @@
 \Author[1]{Daniel}{Shapero}
 \Author[2]{Jessica}{Badgeley}
 \Author[2]{Andrew}{Hoffmann}
+\Author[1]{Ian}{Joughin}
 
 \affil[1]{Polar Science Center, Applied Physics Laboratory, University of Washington, Seattle, WA, USA}
 \affil[2]{Department of Earth and Space Sciences, University of Washington, Seattle, WA, USA}
@@ -100,7 +101,7 @@
 
 \runningtitle{icepack}
 
-\runningauthor{Shapero, Badgeley, Hoffmann}
+\runningauthor{Shapero, Badgeley, Hoffmann, Joughin}
 
 
 
@@ -129,8 +130,8 @@ The components of each action functional can be substituted for different forms 
 The action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
 Icepack includes the 2D shallow ice and shallow stream models.
 We have also defined a 3D hybrid model based on spectral semi-discretization of the Blatter-Pattyn equations.
-Finally, icepack implements a Gauss-Newton solver for inverse problems that runs substantially faster than the standard BFGS method used in the glaciological literature.
-The overall design philosophy of icepack is to be as usable as possible for a wide a swathe of the glaciological community, including both experts and novices in computational science.
+Finally, icepack includes a Gauss-Newton solver for inverse problems that runs substantially faster than the BFGS method often used in the glaciological literature.
+The overall design philosophy of icepack is to be as usable as possible for a wide a swath of the glaciological community, including both experts and novices in computational science.
 \end{abstract}
 
 
@@ -139,54 +140,47 @@ The overall design philosophy of icepack is to be as usable as possible for a wi
 
 \introduction  %% \introduction[modified heading if necessary]
 
-Numerical modeling has become an essential part of the workflow of glaciologists across all disciplines.
+Nearly all glaciologists, from graduate students to senior researchers, need to use numerical models at some point in their career.
+Several software packages for glacier flow modeling already exist and are effective in the hands of experts.
 We highlight four main uses of glacier models in the literature:
 \begin{enumerate}
-    \item predicting future glacier extent and estimating the sea-level rise contribution from glacier dynamics,
+    \item projecting future glacier extent and estimating the sea-level rise contribution from glacier dynamics,
     \item exploring aspects of glacier physics, such as hydrology and calving, that are not completely understood,
     \item estimating unobservable quantities, such as bed friction or rheology, from observational data, and
     \item reconstructing what glaciers of the near- or distant-past may have looked like.
 \end{enumerate}
-Nearly all glaciologists, from graduate students to senior researchers, need to use numerical models at some point in their career.
-Several glacier flow models already exist and are effective in the hands of experts.
-These models are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
-Many researchers in glaciology, however, receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
+To accomplish these tasks, these tools are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
+Many glaciologists receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
 The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for glaciologists who are not experts in high-performance computing.
-Our goal is to make a tool that will be both accessible to non-experts and useful for experts.
+In this paper, we introduce a new Python software package for glacier flow modeling called \emph{iceapck}.
+Our goal is to make a tool that will be both accessible to novices and more productive for experts.
 
 The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
-VarGlaS is implemented using the finite element modeling package FEniCS \citep{logg2012automated}, whereas icepack is built on top of Firedrake.
-The Firedrake project began as an outgrowth of FEniCS.
-Both packages share a similar goal of saving users from manually writing low-level code for assembling the systems of equations that discretize their physics model.
+VarGlaS is implemented using the finite element modeling (FEM) package FEniCS \citep{logg2012automated}, whereas icepack is built on top of Firedrake, which began as an outgrowth of FEniCS.
+Both packages share a similar goal of saving users from manually writing low-level code for assembling the systems of equations that discretize their model physics.
 Instead, users describe the weak form of the partial differential equations they wish to solve using a high-level domain-specific language (DSL) called the \emph{Unified Form Language} or UFL \citep{alnaes2014unified}.
 This DSL is embedded entirely into Python, i.e. the complete syntax of UFL can be mapped directly onto overloaded operators in the Python programming language.
 Both FEniCS and Firedrake then generate optimized C or C++ code to assemble the discretized system of equations from this symbolic description of the problem \citep{kirby2006compiler, rathgeber2016firedrake}.
-Combining a DSL and a code generator frees users from the very error-prone process of writing these assembly kernels themselves, and makes the syntax of the code align closer to the syntax of written mathematical expressions.
+Combining a DSL and a code generator frees users from the very error-prone process of writing these assembly kernels themselves, and makes the syntax of the code align more closely to the syntax of written mathematical expressions.
 Additionally, having a high-level symbolic description of the problem makes it possible to automatically derive tangent linear models and adjoints \citep{mitusch2019dolfin}.
 
 Icepack improves upon the groundwork laid in VarGlaS in three main respects.
-First, icepack includes a simple 3D flow model that uses several features only available in Firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated}.
-This model will be described in section \ref{sec:physics-hybrid-model}.
-Second, the architecture of icepack is designed to make it easy for users to alter the various physics components, such as the rheology and basal friction, of any of the models included.
-The software design that made this possible is discussed in section \S\ref{sec:physics-substitution}.
-Finally, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS; see section \S\ref{sec:numerics-inverse-solvers}.
+First, icepack includes a simple 3D flow model that uses several features only available in Firedrake: extruded meshes and tensor product finite elements \citep{bercea2016structure, mcrae2016automated} (see \S\ref{sec:physics-hybrid-model}).
+Second, icepack's architecture is designed to make it easy for users to alter the various physics components, such as the rheology and basal friction, of any of its constituent models (see \S\ref{sec:physics-substitution}).
+Finally, the inverse solver in icepack uses the Gauss-Newton method, which converges faster and more reliably than the BFGS method used in VarGlaS (see section \S\ref{sec:numerics-inverse-solvers}).
+
+
+\section{Physics}
 
 The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
-The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation.
-The inputs to the diagnostic equation are the ice thickness, surface elevation, velocity at the inflow boundary, rheology, and bed friction coefficient.
-The output of the diagnostic equation is the ice velocity throughout the entire domain.
+The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation (PDE).
 The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
-The inputs to the prognostic equation are the current value of the ice thickness, velocity, and the surface and basal mass balance.
-The output is the ice thickness at the subsequent timestep.
 Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation.
 
 The rheology and friction coefficient are functions of other fields that have their own evolution equations.
 For example, the rheology is a function of temperature, englacial water content, and damage from crevassing.
-Likewise, the friction coefficient can be described in terms of the subglacial water pressure and a roughness factor for the underlying bedrock.
+Likewise, the friction coefficient can be described in terms of the subglacial water pressure and a roughness factor for the underlying bedrock \citep{cuffey2010physics}.
 The diagnostic and prognostic equations can then be supplemented with evolution equations for these fields, for example the heat equation for temperature, or a hydrology model for subglacial water pressure.
-
-
-\section{Physics}
 
 \begin{table}[h]
     \begin{tabular}{l|l}
@@ -230,12 +224,10 @@ The prognostic model is a conservative advection equation:
     \frac{\partial h}{\partial t} + \nabla\cdot hu = \dot a_s - \dot a_b,
 \end{equation}
 where $\dot a_s$ and $\dot a_b$ are the surface and basal mass balance.
-The thickness is represented using continuous, piecewise polynomial basis functions in each cell of the mesh.
-The ice thickness and bed elevation are used to update the surface elevation at every timestep, and we need the surface gradient to calculate the driving stress.
-The current prognostic model implementation in icepack assumes continuous basis functions because this makes for the most straightforward calculation of the ice surface slope, which is part of the driving stress.
-We have not yet implemented a solver that works for discontinuous basis functions, but this extension is completely feasible within our framework and may come in a future release of icepack.
+Icepack represents the thickness using continuous, piecewise polynomial basis functions in each cell of the mesh.
+We have not yet implemented a formulation that works with discontinuous basis functions, but this extension is completely feasible within our framework.
 
-The surface elevation is calculated at each timestep of a simulation as
+The surface elevation is calculated as
 \begin{equation}
     s = \max\{b + h, (1 - \rho_I / \rho_W)h\},
 \end{equation}
@@ -250,9 +242,9 @@ We have not implemented this feature but support for non-hydrostatic ice shelves
 
 There are four \emph{diagnostic} or \emph{momentum transport} models implemented in icepack.
 For each of the diagnostic models, we use a formulation of the physics based on a \emph{minimization} or \emph{action principle} \citep{dukowicz2010consistent}.
-Action principles are completely equivalent to the usual weak form of a partial differential equation but have certain numerical advantages that we will describe below.
+Action principles are completely equivalent to the usual weak form of a partial differential equation but have certain numerical advantages, as described below.
 
-The most complex and most physically accurate model is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
+The most complex and most physically accurate model that we implement is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
 (In icepack we refer to our implementation of this equation as a \emph{hybrid model} as it includes both shear and plug flow modes, described below.)
 The only approximation that the first-order model makes is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
 This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
@@ -261,12 +253,9 @@ Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier f
 From the first-order model, two approximations are possible.
 First, the \emph{shallow ice approximation} (SIA) comes from assuming that vertical shear is the dominant mode of ice flow.
 The SIA model \citep{hutter1981effect} describes the interior of ice sheets well, where flow can be simply described as bed-parallel shear and surface and basal slopes are small.
-This approximation breaks down near ice divides, where vertical velocities dominate, and near ice margins, where basal sliding can be a large fraction of the surface speed.
-Second, one could assume that ice flow is purely by horizontal extension and that the surface and bed velocities are practically the same.
-This is called the \emph{shallow stream approximation} (SSA).
+This approximation breaks down near ice margins, where basal sliding can be a large fraction of the surface speed and where membrane stresses are substantial.
+Second, one could assume that ice flow is purely by horizontal extension and that the surface and bed velocities are practically the same, which is called the \emph{shallow stream approximation} (SSA).
 The SSA model describes the fast-flowing margins of the ice sheet best, encompassing grounded ice streams or floating ice shelves \citep{macayeal1989large}.
-Finally, for floating ice, the shallow stream approximation simplifies further to the \emph{shallow shelf approximation}.
-The shallow shelf model has no bed friction and the ice surface elevation can be eliminated from the system.
 
 All the diagnostic models inherit a fundamental nonlinearity in the mechanics of ice flow.
 For a Newtonian viscous fluid, the stress tensor $\tau$ and the strain rate tensor $\dot\varepsilon$ are linearly proportional to each other.
@@ -276,6 +265,7 @@ Glaciers, however, have a nonlinear constitutive relation:
 \end{equation}
 where $A$ is the \emph{fluidity} and $n$ is the \emph{Glen flow law exponent} \citep{cuffey2010physics}.
 The most commonly-used value of the flow law exponent is $n \approx 3$ as determined from laboratory experiments.
+Strictly speaking, the fluidity should be a tensor field, but is almost universally treated as a scalar.
 
 All of the diagnostic models in icepack are described through \emph{variational} or \emph{action} principles \citep{dukowicz2010consistent}.
 Rather than describe the velocity as the weak solution of a nonlinear PDE, an action principle instead states that the velocity minimizes a functional called the action.
@@ -296,11 +286,12 @@ The key responsibility of the model classes is to take in the input fields -- th
 The action principle is especially useful for designing a robust numerical solver.
 For viscous flow problems near to steady-state, the action is \emph{convex} as a function of the ice velocity, i.e. its second derivative is positive-definite.
 Convexity implies that the action functional has a unique minimizer and that, with an appropriate line search strategy, Newton's method will converge from any initial guess.
-Minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation, although the two formulations are equivalent.
+Minimizing a convex action functional is vastly more convenient numerically than solving a general nonlinear equation while having no additional computational cost.
+Both formulations are mathematically equivalent.
 
 \subsubsection{Shallow ice approximation}
 
-The shallow ice model can be derived from the Blatter-Pattyn approximation by assuming the ice flow is dominated by bed-parallel shear and that surface and basal slopes are small, i.e. $\partial u/\partial x \ll \partial u/\partial z$.
+The shallow ice model can be derived from the Blatter-Pattyn approximation by assuming ice flow is dominated by bed-parallel shear and that surface and basal slopes are small, i.e. $\partial u/\partial x \ll \partial u/\partial z$.
 The result is a 2D system of equations for depth-averaged horizontal velocity.
 The class in icepack that represents this physics model is called \texttt{ShallowIce}.
 The terms in the action functional are:
@@ -309,7 +300,7 @@ The terms in the action functional are:
     \text{gravity} & = \int_\Omega\frac{2A(\rho_I g)^n}{n+2} h^{n + 1}|\nabla s|^{n - 1}\nabla s\cdot u\,dx\\
     \text{penalty} & = \frac{1}{2}\int_\Omega \ell^2\nabla u\cdot \nabla u\,dx
 \end{align}
-and the action fuctional is
+and the action functional is
 \begin{equation}
     J = \text{mass} + \text{gravity} + \text{penalty}.
 \end{equation}
@@ -322,8 +313,8 @@ This penalty term smooths over numerical artifacts, especially near the ice marg
 In these regions the shallow ice approximation is less applicable, so the error in solving a different set of equations is small compared to the inherent modeling error in using these equations in the first place.
 
 The shallow ice approximation applies well in ice-sheet interiors.
-For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \citep{kirchner2016shallow}.
-Caution must be taken, however, because areas of the ice sheet that experience high vertical velocities (e.g., ice divides) or plug flow (e.g., ice streams) are not well represented by this approximation.
+For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \citep{cuffey2010physics, kirchner2016shallow}.
+This approximation does not work well in areas of the ice sheet where the flow has substantial membrane stresses, like fast outlet glaciers.
 
 \subsubsection{Shallow stream and shelf approximations}
 
@@ -352,21 +343,21 @@ The ice shelf and ice stream models share common components, i.e. the viscosity 
 Several studies have compared the shallow stream approximation to 3D models such as Blatter-Pattyn or full Stokes \citep{pattyn2013grounding}.
 The most appreciable difference between lower- and higher-order models occurs near the glacier grounding line, where the full Stokes equations can represent bridging stresses \citep{van2013fundamentals}.
 The lack of vertical strain rates in the ice viscosity in 2D models can also lead to different equilibrium grounding line positions under the same external forcing.
-The shallow stream approximation is warranted for studying individual fast-flowing glaciers where the concern is more with studying processes and responses than with complete accuracy.
+The advantage of the SSA is that that it can capture most of the overall flow features of an individual fast-flowing glacier but at much lower computational cost than the Stokes equations.
 
 
 \subsubsection{Hybrid model} \label{sec:physics-hybrid-model}
 
 The first-order model in icepack is described in the class \texttt{HybridModel}.
 The shallow ice and shallow stream models follow directly from the variational principles described above.
-The hybrid flow model, while also based on a variational principle, uses two more tricks: terrain-following coordinates and vertical spectral methods.
+The hybrid flow model, while also based on a variational principle, uses two more advanced mathematical techniques: terrain-following coordinates and spectral discretization in the vertical dimension.
 Each of these methods has appeared in the literature on glacier modeling before but never all in the same place for a 3D model.
-\citet{langdon1978numerical} and \cite{bassis2010hamilton} used variational principles and vertical spectral methods, but these works considered only flowband and not 3D models.
+\citet{langdon1978numerical} and \cite{bassis2010hamilton} used variational principles and vertical spectral methods, but these works considered only flowband models.
 \citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
 \citet{jouvet2015multilayer} used vertical semi-discretization of the variational problem, but this model used a finite difference discretization in the vertical direction.
 
 \textbf{Terrain-following coordinates}.
-Rather than use the usual Cartesian coordinate system, the hybrid flow model uses terrain-following coordinates.
+Rather than the usual Cartesian coordinate system, the hybrid flow model uses terrain-following coordinates.
 The terrain-following vertical coordinate $\zeta$ is
 \begin{equation}
     \zeta = \frac{z - b}{h}
@@ -427,15 +418,14 @@ For example, we can use piecewise linear or quadratic elements on triangles and 
 Rather than use the usual Lagrange interpolating polynomial basis in the vertical dimension, we can instead use the Legendre polynomial basis.
 The Legendre polynomials are mutually orthogonal and this choice makes the mass matrix block-diagonal.
 
-The combination of using extruded meshes and tensor product elements in the vertical direction is referred to as \emph{semi-discretization}.
-This approach can be thought of merely as a way to discretize a PDE that has special structure.
-Alternatively, we can view vertical semi-discretization as defining a family of models indexed by the number of vertical basis functions.
+The combination of using extruded meshes and tensor product elements in the vertical direction can be thought of merely as a way to discretize a PDE that has special structure.
+Alternatively, we can view discretization in the vertical as defining a family of models indexed by the number of vertical basis functions.
 The order-$d$ model defines a coupled system of PDEs for $d$ vector fields.
 Each vector field represents one mode of vertical variability, similar to the distinction between barotropic and baroclinic modes in atmospheric physics and oceanography.
 The system is then discretized in the horizontal and solved numerically.
 In any case, the code is the same regardless of how one views the underlying mathematics.
 
-The user then has to decide how many vertical modes are enough.
+The user then has to decide how many vertical modes are sufficient.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
 The degree 2 model is the most minimalistic model that still exhibits vertical shear and can satisfy the zero-stress boundary condition at the ice surface.
 Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
@@ -443,16 +433,21 @@ Going to higher degree gives a more accurate approximation at the expense of gre
 \subsection{Substituting model components} \label{sec:physics-substitution}
 
 Many aspects of glacier physics are not completely understood.
-For example, the most common description of basal friction assumes that glacier sliding occurs through regelation, in which case the basal shear stress can be written
+For example, the most commonly used sliding law is the power law
 \begin{equation}
     \tau_b = -C|u|^{\frac{1}{m} - 1}u
     \label{eq:weertman-sliding}
 \end{equation}
-with $m = 3$ \citep{weertman1957sliding}.
-Many authors have argued that, in fast-flowing regions of the ice sheet, glacier sliding occurs instead by plastic deformation within the subglacial sediments \citep{tulaczyk2000basal}.
-For plastic sliding, the shear stress is dependent on the yield strength of the subglacial sediments and not on the sliding speed, in which case $m = \infty$ would be most appropriate.
-Finally, the Schoof sliding law aims to reconcile the two modes of sliding \citep{schoof2005effect}.
-Below a critical sliding speed, the shear stress is aymptotic to $|u|^{1/m}$ as in the Weertman sliding law, but above the critical speed the shear stress is independent of the sliding speed.
+for some exponent $m$.
+Older research assumed $m = 3$ based on the theory of regelation \citep{weertman1957sliding}, which has since been referred to as the Weertman sliding law.
+When $m = \infty$, the basal shear stress is independing of the sliding speed; this is referred to as perfect plasticity.
+More recently, \citet{schoof2005effect} proposed the functional form
+\begin{equation}
+    \tau_b = -C\left(\frac{|u|}{|u| + u_c}\right)^{\frac{1}{m}}\frac{u}{|u|}
+\end{equation}
+where $u_c$ is some critical speed.
+This sliding law acts like the Weertman law when $|u| \ll u_c$ and like the plastic law when $|u| \gg u_c$.
+This latter equation has been found to agree best with laboratory experiments \citep{zoet2020slip}.
 
 The Weertman and plastic sliding laws possess the same functional form but differ only in the value of a single scalar parameter $m$.
 The Schoof sliding law, on the other hand, has a totally different functional dependence on the velocity.
@@ -460,10 +455,10 @@ Several authors, including Schoof, have proposed that the basal shear stress is 
 Implementing these more sophisticated mathematical models would require adding an extra argument to the procedure for solving the diagnostic equation.
 
 One of our goals with icepack is to facilitate experimentation with the model physics, even for novice users.
-Of the programming languages that are commonly used for scientific computing, only Python and possibly Julia would meet these needs.
+Of the programming languages that are commonly used for scientific computing, only Python and possibly Julia would appear meet these needs.
 To support use cases like implementing the Schoof sliding law, it must be possible to completely alter the functional form of a given model physics component.
 For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
-In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress.
+In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress, which Python accomodates easily.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function, which is undesirable.
 In C++, one could avoid changing the signature of the diagnostic solve routine by (1) using variadic templates, (2) wrapping the inputs in a class, or (3) passing all arguments in a dictionary.
 Using variadic templates or wrapping the inputs in a class would require users to know more about generic or object-oriented programming than a novice might.
@@ -486,17 +481,13 @@ The user can replace these default routines with one of their own choosing by pa
 
 In step 3, any fields that were unnecessary for calculating a given component are ignored.
 For example, the gravitational driving power routine will pull out the velocity, thickness, and surface elevation.
-It will have access to other fields, for example the ice fluidity.
-These extra arguments are ignored.
+While the routine will not use them, it also has access to other fields, for example the ice fluidity.
 
 In adopting this approach, we are restricted to using keyword arguments instead of positional arguments.
 We argue that employing only keyword arguments is a strength rather than a weakness because it enhances readability and comprehensibility for the particular use case of calling a physics solver.
 The user only needs to know the argument names, which are chosen to agree with the English name most commonly used in the literature -- ``friction'', ``rheology'', ``velocity'', etc.
 The order of the arguments is arbitrary and immaterial.
 The preference for argument passing by name is specific to this use case, however, and is not universal.
-
-One key limitation of our approach is that, while users can change what goes into one or more terms of the action functional, they cannot add or remove terms.
-This case would call for writing a new diagnostic model.
 
 \subsection{Heat transport} \label{sec:heat-transport}
 
@@ -515,7 +506,8 @@ For these reasons, the diagnostic model takes in the fluidity as an argument and
 Our general design principle is that icepack will solve differential equations for the various prognostic fields but it's up to users to decide how these fields are coupled.
 
 We have not implemented a model for the surface or englacial transport of meltwater, although it would be possible to include this process.
-Instead, we rely on an external scheme to act as a sink of enthalpy for meltwater fraction values above some user-defined critical value, which defaults to 1\%.
+Instead, we rely on an external scheme to act as a sink of enthalpy for meltwater fraction values above some user-defined critical value.
+A common choice for this critical value is 1\% \citep{aschwanden2012enthalpy}.
 
 \subsection{Damage transport} \label{sec:damage-transport}
 
@@ -539,7 +531,7 @@ The class \texttt{InverseProblem} represents the specification of an inverse pro
     \item the model object and the method that solves the diagnostic equation,
     \item the objective and regularization functionals,
     \item the observed field and the name of the argument to the diagnostic solver,
-    \item an initial guess for the field to be estimated and the name of the argument to the diagnostic solver,
+    \item an initial guess for the field to be estimated and the name of the argument to the diagnostic solver, and
     \item extra data passed to the diagnostic solver such as boundary conditions.
 \end{itemize}
 This class currently assumes that the observed state is always the ice velocity.
@@ -550,7 +542,7 @@ This flexibility with respect to parameterization is not just convenient but ess
 Nearly all studies in the literature introduce a parameterization of the field to be estimated in terms of some auxiliary field in order to guarantee positivity \citep{macayeal1992basal, joughin2009basal}.
 For example, one could define the friction coefficient $C$ in terms of an auxiliary variable $\beta$ as $C = \beta^2$ to guarantee positivity.
 One could also just as easily use $C \propto \exp(\beta)$.
-The data assimilation routines in icepack can work the same for any parameterization of the physics because Firedrake provides a rich set of routines for symbolically calculating functional derivatives.
+The data assimilation routines in icepack can work the same way for any parameterization of the physics because Firedrake provides a rich set of routines for symbolically calculating functional derivatives.
 The inverse problem class only needs to know which functional needs to be differentiated with respect to which field.
 
 The \texttt{InverseSolver} class is responsible for actually solving the inverse problem.
@@ -570,9 +562,8 @@ There are several model classes, one for each set of physics equations: \texttt{
 The model classes do not dictate how that problem should be solved numerically; this is the realm of a separate class called \texttt{FlowSolver}.
 This flow solver class has methods for computing the solutions of the diagnostic and prognostic equations and works the same regardless of which model is being solved.
 The diagnostic solve method amounts to invoking an external Newton solve procedure on the symbolic action functional that the model object creates.
-The Newton solver itself is completely standard but the convergence criterion is not and will be discussed in section \S\ref{sec:convergence-criteria}.
-Finally the flow solver has a method to update the ice thickness from the current value, the ice velocity, and the mass balance rates.
-The prognostic solver will be discussed in section \S\ref{sec:prognostic-model}.
+The Newton solver itself is completely standard but the convergence criterion is not (see section \S\ref{sec:convergence-criteria}).
+Finally, the flow solver has a method to update the ice thickness from the current value, the ice velocity, and the mass balance rates.
 
 The Unified Form Language for specifying weak forms of PDEs contains all of the primitives necessary to express individual terms of the action functional.
 These primitives consist of the basic vector calculus operators like the gradient of a field, tensor calculus operations like taking the dot product of two vectors or tensors, scalar functions like the square root or exponential, and symbolic integration over the mesh or its boundary.
@@ -583,13 +574,14 @@ For example, the strain rate for a given velocity field $u$ can be written as \t
 
 The simplest explicit timestepping schemes are unstable with continuous Galerkin finite elements.
 To solve the advection equation equation, other packages use the streamlined upwind Petrov-Galerkin (SUPG) method for the timestepping scheme \citep{brinkerhoff2013data, larour2012continental}.
-The SUPG method with an explicit time discretization is conditionally stable \citep{donea2003finite}.
-This scheme introduces a tuneable stabilization parameter, so in the interest of simplicity we instead default to the implicit Euler scheme.
+The SUPG method with an explicit time discretization is conditionally stable \citep{donea2003finite}, but this scheme introduces a tuneable stabilization parameter.
+In the interest of simplicity, we instead default to the implicit Euler scheme, which has no such parameters.
 The implicit Euler scheme requires solving a non-symmetric linear system, but the computational cost comes with the advantage of unconditional stability.
 
-Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy condition.
+Practicing glaciologists who have not studied numerical PDE may be unfamiliar with the Courant-Friedrichs-Lewy (CFL) condition.
 The use of an unconditionally stable scheme guarantees that they will get an answer, rather than a runtime error, should they try to use a large timestep.
-The extra cost of using an implicit time discretization for the prognostic equation is dwarfed by the cost of the diagnostic solve in any case.
+Users are still responsible for checking the accuracy of their results, for example by running at more than one resolution.
+The extra computational cost of using an implicit time discretization for the prognostic equation is dwarfed by the cost of the diagnostic solve in any case.
 Advanced users who are interested in maximizing performance can subclass the solver to implement a faster explicit scheme.
 
 The implicit Euler scheme tends to diffuse out sharp discontinuities that may be present in the true solution \citep{donea2003finite}.
@@ -623,30 +615,29 @@ The line search step ensures that the method can converge even from a poor initi
 
 For a convex problem, $d^2J$ is a symmetric and positive-definite matrix.
 This has two advantages.
-First, the search direction is always a descent direction for $J$.
-For non-convex problems this is not always the case and some adaptation strategy must be employed in the vicinity of saddle points.
+First, the search direction is always a descent direction for $J$, which is not always the case for non-convex problems.
 Second, symmetry and positivity enable the use of specialized linear solvers, such as the Cholesky decomposition or the conjugate gradient algorithm, that are superior to their more general counterparts in many respects.
 
 Other software packages that treat diagnostic models as nonlinear systems of equations tend to rely on ad-hoc procedures for initializing the numerical solution process.
 For example, without a damping procedure in Newton's method, the iteration can prove unstable if initialized far away from the true solution.
 Some packages combat this problem by using a few iterations of the more robust but slower Picard method first \citep{gagliardini2013capabilities}.
-While this approach can be effective it requires tuning the number of Picard iterations and there is no guarantee that an adequate amount for one problem will work well on another problem.
-This issue rarely appears on realistic input data.
-When solving inverse problems, however, the intermediate guesses for the inferred field can be wildly unrealistic before converging.
+While this approach can be effective, it requires tuning the number of Picard iterations.
+There is no guarantee that an adequate amount for one problem will work well on another.
+This issue rarely appears on realistic input data, but when solving inverse problems, the intermediate guesses for the inferred field can be wildly unrealistic before converging.
 A forward model solver that is not sufficiently robust can crash in these extreme scenarios.
 By contrast, a damped Newton procedure using a line search that satisfies the Armijo-Wolfe criteria is guaranteed to converge on non-degenerate, if unrealistic, input data.
 
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
 
-Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation, for example \citet{perego2012parallel}.
+Several works in the literature have weighed the relative merits of different iterative methods for solving the nonlinear diagnostic equation \citep{perego2012parallel}.
 Few have considered the problem of when to stop iterating.
 The most common stopping criteria are when (1) the 2-norm of the residual is sufficiently small or (2) the relative change in the iterates is sufficiently small.
 Each of these approaches has problems.
 The residual norm depends on the discretization and does not weight all degrees of freedom proportionally, e.g. vertex and edge degrees of freedom in higher-order finite element methods.
 The relative change criterion, on the other hand, can suggest convergence when in fact the method has stagnated.
 
-A convergence criterion that works equally well independent of the mesh, finite element discretization, and the quality of the initial guess can be defined based on the idea of the \emph{Newton decrement} \citep{nocedal2006numerical}.
+We can devise a convergence criterion that works equally well, independent of the discretization and the quality of the initial guess, based on the \emph{Newton decrement} \citep{nocedal2006numerical}.
 Since the second derivative operator $d^2J(u_k)$ is positive-definite, the Newton search direction $v_k$ computed from equation \eqref{eq:newton-search-direction} is a descent direction for $J$:
 \begin{equation}
     dJ(u_k)\cdot v_k < 0.
@@ -656,7 +647,7 @@ For $u_k$ sufficiently close to the true solution $u$, the Newton decrement roug
 \begin{equation}
     J(u_k) - J(u) \approx \frac{1}{2}|dJ(u_k)\cdot v_k|.
 \end{equation}
-We can then use the Newton decrement to decide when to stop the iteration.
+We can then use the Newton decrement to decide when to stop the iteration, as described below.
 
 As shown in equation \eqref{action-functional}, the action for most models has units of power and is the sum of dissipation due to viscosity, friction, gravitational driving, and ocean back-pressure at the terminus.
 The viscous and frictional terms are convex, positive functions of the velocity.
@@ -707,14 +698,14 @@ Finally, the Gauss-Newton solver defines an approximation to the ``first-order''
 Each iteration of Gauss-Newton is more expensive than that of BFGS or gradient descent because it requires the solution of a more complex linear system than just the mass matrix.
 The Gauss-Newton method converges fastest by far in virtually every test case we have found, in some instances by up to factor of 50.
 
-The derivative of the objective functional with respect to the unknown parameter is calculated using the symbolic differentiation features of Firedrake.
+The derivative of the objective functional with respect to the unknown parameter is calculated using the adjoint method and the symbolic differentiation features of Firedrake.
 The user does not need to provide any routines for the derivatives, only the symbolic form of the error metric and the regularization functional.
 The model object is responsible for providing the symbolic form of the action functional.
 
 
 \subsection{Hybrid model}
 
-The hybrid flow uses several features that are only available in Firedrake to better exploit the special structure of the problem.
+The hybrid flow model uses several features that are available in Firedrake to better exploit the special structure of the problem.
 Implementing this model also required some mathematical sleight-of-hand related to the terminus boundary condition that has not appeared in the literature before.
 Additionally, the hierarchical structure of spectral basis functions presents an opportunity for developing fast algorithms.
 In all other respects the implementation of the hybrid flow model using convex optimization follows the techniques described above.
@@ -756,7 +747,7 @@ This fix reduces the errors in the velocities, but it does not eliminate them co
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/legendre/pressure.png}
     \caption{The normalized ocean pressure ($p_w / \rho_Wg$) and Legendre polynomial approximations of several degrees (left), and the residuals of the approximation (right).
-    For this particular example, the waterline is at $\zeta = 1/3$.
+    For this particular example, the waterline is at $\zeta = 1/3$, which would be representative of a glacier grounded on a higher moraine.
     The moments of each of the residuals up to the approximation degree are all zero.}
     \label{fig:legendre}
 \end{figure}
@@ -810,6 +801,7 @@ The power dissipation density for the Schoof-type sliding law that we use is
 Figure \ref{fig:sliding-laws} shows a comparison of the original Schoof sliding law and the sliding law that arises as the derivative of the functional in equation \eqref{eq:power-dissipation-modified-schoof-sliding}.
 The two have the same asymptotic behavior when the speed is much smaller or much larger than the critical speed; they differ in a relatively small range around the critical speed.
 The relative difference in basal shear stress between the two sliding laws is less than 10\% throughout the entire range.
+Although figure \ref{fig:sliding-laws} shows a comparison of both sliding laws with the same value of the critical speed, by using different values, the agreement between our sliding law can be brought into much closer agreement with the Schoof law.
 
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/sliding/sliding-law.png}
@@ -849,8 +841,7 @@ This asymmetric response is typical and expected from ice physics.
 Using variational principles to express all constitutive laws is less flexible than specifying the sliding law directly and this is a distinct disadvantage.
 We were able to implement a sliding law that exhibits many of the characteristics of the Schoof sliding law.
 \citet{asay2016experimental} also suggest using a sliding law that transitions sharply to exact plasticity above the critical speed.
-Expressing this sliding law in UFL requires a conditional in the velocity and is thus no longer differentiable.
-This lack of differentiability makes the forward solver crash.
+Expressing this sliding law in UFL requires a conditional in the velocity and is thus no longer differentiable, causing the forward solver to crash.
 The numerical advantages of using variational principles are so great, however, that we view this tradeoff as acceptable.
 
 
@@ -866,7 +857,6 @@ The numerical advantages of using variational principles are so great, however, 
 As a demonstration of the shallow ice approximation model, we ran an experiment inspired by \cite{kessler2008fjord}.
 In this work, the authors coupled an ice flow model to simple models for bed-erosion, calving, and glacial isostatic adjustment (GIA) to investigate the formation of deep fjords that are characteristic of coastlines on Baffin Island, Greenland, and British Columbia, among others.
 We emulated their domain and bedrock geometry -- a plateau surrounded by a ridge punctuated by four valleys -- without also simulating erosion or GIA.
-These effects will be the subject of future work.
 
 Figure \ref{fig:ice-sheet} shows the results of this computational experiment.
 We initialized the experiment with a simple but unrealistic ice thickness.
@@ -875,7 +865,7 @@ The ice sheet relaxes very rapidly in the first 200 years, but after this change
 The resulting velocity pattern is similar to that of \citet{kessler2008fjord}, with the highest velocities where ice flows out from the valleys.
 In and upstream of the valleys, the surface is drawn down due to the elevated export of ice.
 
-The diagnostic model used in this demonstration is cheap enough that it can be used to simulate ice sheets over several millenia in a matter of minutes on a desktop.
+The diagnostic model used in this demonstration is computationally cheap enough that it can be used to simulate ice sheets over several millenia in a matter of minutes on a desktop.
 A key feature of icepack is the ability to choose between many different diagnostic models.
 Users are free to decide what model works best for the spatial and temporal scales of their problem, how accurately they need to solve this problem to produce useful results, and what computational resources they are willing to devote.
 
@@ -895,7 +885,7 @@ Four ice streams flow into the shelf with varying speeds and a prescribed inflow
 In the first phase of the experiment, the ice shelf is propagated to steady state without damage for 200 years.
 After this time interval, the flux imbalance is less than 1\% of the influx.
 In the second phase, damage transport is turned on and coupled to the ice velocity.
-An interesting feature to observed in the approximate equilibrium damage field is that the highest values occur between the streams and not within them.
+An interesting feature to observe in the approximate equilibrium damage field is that the highest values occur between the streams and not within them.
 Additionally, the spacing between the streams changes as a result of adding damage.
 The final ice thickness, velocity, strain rate, and damage are shown in figure \ref{fig:damage}.
 
@@ -908,7 +898,7 @@ From January to March of 2002, the neighboring Larsen B Ice Shelf disintegrated 
 This mechanism might also lead to the breakup of Larsen C in the future.
 One of the key factors affecting the stability of ice shelves is the presence of marine ice -- seawater that freezes onto the base of an ice shelf -- in the suture zones where two flow units meet \citep{kulessa2014marine}.
 Marine ice is warmer than meteoric ice and usually includes brine pockets, which are discernible in radio echo sounding measurements as the absence of reflection from the ice shelf base \citep{holland2009marine}.
-This warmer and impurity-laden ice is more ductile and thus less prone to fracture than cold and brittle meteoric ice.
+This warmer and impurity-laden ice is more ductile and thus should be less prone to fracture than cold and brittle meteoric ice.
 Ocean models predict that marine ice forms under Larsen C as well \citep{holland2009marine}.
 By estimating the material rigidity of an ice shelf, we can constrain where marine ice may be forming.
 
@@ -917,8 +907,7 @@ By estimating the material rigidity of an ice shelf, we can constrain where mari
 
 We used the InSAR phase-based ice velocity map from \citet{mouginot2019continent}.
 This dataset has nominal errors over the Larsen Ice Shelf on the order 1 -- 7 meters per year.
-We used the recently-released BedMachine map of the thickness of Antarctica \citep{morlighem2019deep}.
-This data product improves on existing thickness maps for the continent by using the mass conservation law, together with measurements of the velocity, surface elevation, and surface mass balance, to improve thickness estimates where few measurements are available.
+We used the recently-released BedMachine map of the thickness of Antarctica, which takes advantage of newly available remote sensing data \citep{morlighem2019deep}.
 
 Existing work on glaciological inverse problems uses the mismatch between the computed and observed velocity fields as part of the objective functional.
 The effect of thickness errors is studied largely through a posteriori validation \citep{joughin2004basal, larour2005rheology}.
@@ -937,9 +926,9 @@ For finite, positive values of $\gamma$ this error metric is robust to non-norma
 \subsubsection{Parameterization}
 
 The rheology parameter of an ice shelf is strictly positive.
-The optimization algorithm, however, can explore unphysical regions of parameter space without some a priori constraint on what values are reasonable.
+The optimization algorithm, however, can explore unphysical regions of parameter space without some a priori constraints.
 Rather than try to solve an inequality-constrained problem, most studies in glaciology instead re-parameterize the problem in terms of some auxiliary field in such a way that the rheology is manifestly positive.
-In this case we will use the parameterization
+In this case we use the parameterization
 \begin{equation}
     A = A_0e^{\theta}
 \end{equation}
@@ -964,21 +953,21 @@ This feature is especially apparent around the large rift emanating from the Gip
 We find other areas of low rigidity in the suture zones where two flow units converge and where marine ice tends to form, releasing heat to the ice shelf, exactly as observed in \citet{holland2009marine}.
 Finally, the inferred rheology field reproduces features that have already been found in previous studies of Larsen C Ice Shelf \citep{khazendar2011acceleration}.
 
-The final value of the model-data misfit \eqref{eq:l1-error-metric} matches the value we would expect if the velocity errors actually came from this probability distribution.
-In a separate computational experiment, we used the older bedmap2 ice thickness map instead of BedMachine \citep{fretwell2013bedmap2}.
+The final value of the model-data misfit from equation \eqref{eq:l1-error-metric} matches the value we would expect if the velocity errors actually came from this probability distribution.
+In a separate computational experiment, we used the older bedmap2 ice thickness \citep{fretwell2013bedmap2}.
 We were unable to achieve the same model-data misfit using bedmap2 at the same grid resolution with any regularization parameter.
 
 
 \section{Usability}
 
 One of the main goals for icepack is to create a tool that is accessible to researchers who might not be experts in scientific computing.
-Previous work on numerical modeling of glacier flow has focused largely on technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory, does it scale to large numbers of processors, can models accurately predict grounding line retreat, etc.
-The human learning to use an unfamiliar software tool is largely absent from the discussion.
+Previous work on numerical modeling of glacier flow has focused largely on the technical details of the models themselves -- does a given solver converge with the accuracy expected from finite element theory; does it scale to large numbers of processors; can models accurately predict grounding line retreat, etc.
+The person learning to use an unfamiliar software tool is largely absent from the discussion.
 For graduate students or other researchers who are not experts in computational physics, the difficulty of learning to use a particular software package may be more of a rate-limiting factor than the speed or efficiency of that software.
 
-The field of \emph{human-computer interaction} (HCI) asks how we can design software that is easiest to learn and use effectively.
+The field of \emph{human-computer interaction} (HCI) asks how we can design software that is easier to learn and use effectively.
 In the following, we will describe some of the design choices in icepack and how they relate to what HCI researchers call the \emph{cognitive dimensions of notations}.
-\citet{green1996usability} introduced this concept to assess the usability of visual programming languages, but the criteria they laid out in this paper have been used to analyze software systems across many disciplines.
+\citet{green1996usability} introduced this concept to assess the usability of visual programming languages, but the criteria they laid out in their study have been used to analyze software systems across many disciplines.
 
 \textbf{Consistency: After a user learns part of the software, can they guess the remaining parts?}
 Each of the model objects in icepack is a class with a method ending in \texttt{solve} that takes in keyword arguments for the various input fields and options for things like boundary conditions.
@@ -1035,7 +1024,7 @@ In this paper, we have presented three demonstrations of this feature:
     \item changing the sliding law in a simulation of a marine-terminating glacier, and
     \item inferring the fluidity of a floating ice shelf in a way that guarantees positivity.
 \end{enumerate}
-The phyics both of how glaciers flow and of how they interact with their environment are not completely understood.
+The phyics of how glaciers interact with their environment are not completely understood.
 Consequently, the ability to change components of the model is an essential feature for any tool aimed at researchers in this field.
 
 We have also paid special attention to how we can design this software package to be most usable for its intended audience.
@@ -1050,9 +1039,9 @@ We argue that the same design features that enhance usability for relative novic
 This paper has presented several physics models currently implemented in icepack along with demonstrations.
 Future developments will include:
 \begin{enumerate}
-    \item an implementation of full Stokes flow
-    \item dynamic glacier termini to enable calving models
-    \item adaptivity through moving mesh methods
+    \item an implementation of full Stokes flow,
+    \item dynamic glacier termini to enable calving models, and
+    \item adaptivity through moving mesh methods.
 \end{enumerate}
 New features will be guided by feedback from icepack users and from the glaciological community at large.
 By providing implementations of several glacier flow models from less to more complex and by enabling users to experiment with the physics, this tool both lowers the barrier to entry for novices to glacier flow modeling and provides a pathway for these users to progress towards ever more sophisticated and advanced simulations.
@@ -1096,6 +1085,7 @@ Additional observational data are hosted at the US National Snow and Ice Data Ce
 
 \authorcontribution{
 DS designed and implemented icepack with contributions from JB and AH.
+IJ tested the model and assisted with design and debugging.
 All authors contributed to the demonstration codes and to writing this paper.
 } %% this section is mandatory
 
@@ -1111,6 +1101,7 @@ We would like thank Ian Joughin for testing the model and for many valuable disc
 DS was supported by US National Science Foundation grant \#1835321 and National Aeronautics and Space Administration grant \#80NSSC20K0954.
 JB was supported by NSF grant \#1256082.
 AH was supported by NASA grant \#80NSSC20K1627.
+IJ was supported by NSF grants \#1835321 and \#1643285.
 
 
 %% REFERENCES
