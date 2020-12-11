@@ -149,10 +149,10 @@ We highlight four main uses of glacier models in the literature:
     \item estimating unobservable quantities, such as bed friction or rheology, from observational data, and
     \item reconstructing what glaciers of the near- or distant-past may have looked like.
 \end{enumerate}
-To accomplish these tasks, these tools are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
+To accomplish these tasks, modeling tools are usually written in compiled programming languages such as C, C++, and Fortran for reasons of computational efficiency.
 Many glaciologists receive little or no formal programming training, much less in these languages, and are instead self-taught in either Python or MATLAB.
 The ubiquity of C, C++, and Fortran in scientific computing can create a barrier to entry for glaciologists who are not experts in high-performance computing.
-In this paper, we introduce a new Python software package for glacier flow modeling called \emph{iceapck}.
+In this paper, we introduce a new Python software package for glacier flow modeling called \emph{icepack}.
 Our goal is to make a tool that will be both accessible to novices and more productive for experts.
 
 The glacier flow modeling package closest in spirit to icepack is VarGlaS \citep{brinkerhoff2013data}.
@@ -351,10 +351,14 @@ The advantage of the SSA is that that it can capture most of the overall flow fe
 The first-order model in icepack is described in the class \texttt{HybridModel}.
 The shallow ice and shallow stream models follow directly from the variational principles described above.
 The hybrid flow model, while also based on a variational principle, uses two more advanced mathematical techniques: terrain-following coordinates and spectral discretization in the vertical dimension.
-Each of these methods has appeared in the literature on glacier modeling before but never all in the same place for a 3D model.
+
+Each of these techniques has appeared in the literature on glacier modeling before but rarely all in the same place for a 3D model.
 \citet{langdon1978numerical} and \cite{bassis2010hamilton} used variational principles and vertical spectral methods, but these works considered only flowband models.
 \citet{kleiner2014numerical} used terrain-following coordinates for 3D glacier flow modeling, but they discretized the problem with finite difference methods in every direction and did not take into account the variational formulation of the diagnostic model.
 \citet{jouvet2015multilayer} used vertical semi-discretization of the variational problem, but this model used a finite difference discretization in the vertical direction.
+The model used in \citet{brinkerhoff2015dynamics} is the closest to the one we present below.
+This work used both terrain-following coordinates and a tensor product basis of Lagrange finite elements in the vertical and higher-degree polynomials in a single vertical layer.
+For the vertical basis functions, they used a plug flow mode and one shear mode.
 
 \textbf{Terrain-following coordinates}.
 Rather than the usual Cartesian coordinate system, the hybrid flow model uses terrain-following coordinates.
@@ -409,7 +413,7 @@ Under the shallow ice approximation, the horizontal velocity varies with depth a
 This extra information about our solution suggests a modal rather than a nodal discretization strategy.
 
 Rather than divide the spatial domain into many vertical layers, we can instead use only one vertical layer and increase the polynomial degree in the vertical direction to obtain higher resolution.
-This type of basis, in which different shape functions are used in different dimensions, is called a \emph{tensor product} element.
+This type of basis, in which different shape functions are used in different dimensions, is called a \emph{tensor product} element \citep{mcrae2016automated}.
 Given a set of finite element basis functions $\{\phi_k(x, y)\}$ defined on the 2D domain $\Omega$ and a set of basis functions $\{\psi_l(\zeta)\}$ defined on the unit interval $[0, 1]$, the tensor product finite element basis $\{\Phi_{kl}\}$ on the extruded domain is defined as
 \begin{equation}
     \Phi_{kl}(x, y, \zeta) = \phi_k(x, y)\psi_l(\zeta).
@@ -417,6 +421,7 @@ Given a set of finite element basis functions $\{\phi_k(x, y)\}$ defined on the 
 For example, we can use piecewise linear or quadratic elements on triangles and use quintic or higher degree polynomials in the vertical.
 Rather than use the usual Lagrange interpolating polynomial basis in the vertical dimension, we can instead use the Legendre polynomial basis.
 The Legendre polynomials are mutually orthogonal and this choice makes the mass matrix block-diagonal.
+Our main reason for choosing to build icepack using the Firedrake package was because it natively supports tensor product elements.
 
 The combination of using extruded meshes and tensor product elements in the vertical direction can be thought of merely as a way to discretize a PDE that has special structure.
 Alternatively, we can view discretization in the vertical as defining a family of models indexed by the number of vertical basis functions.
@@ -429,6 +434,13 @@ The user then has to decide how many vertical modes are sufficient.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
 The degree 2 model is the most minimalistic model that still exhibits vertical shear and can satisfy the zero-stress boundary condition at the ice surface.
 Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
+
+\citet{brinkerhoff2015dynamics} used a similar approach to the one described above, with a one vertical basis function for plug flow and one for shear flow.
+The shear flow basis function was chosen to be exact assuming the SIA balance with cold ice, together with a heuristic approximation for polythermal ice.
+By contrast, our approach allows for an arbitrary number of shear modes, although using a high-degree basis in the presence of a cold-temperate transition surface will introduce ringing artifacts.
+In principle, one could confront this problem by using two layers -- one cold and one temperate -- instead of a single layer.
+The extruded mesh capabilities in Firedrake provide the needed functionality for implementing such a model.
+We have not yet implemented a multilayer model but this will be the subject of future work.
 
 \subsection{Substituting model components} \label{sec:physics-substitution}
 
@@ -764,6 +776,9 @@ The same technique could be used to exactly calculate the ocean backpressure for
 
 
 \section{Demonstrations}
+
+The following demonstrations aim to show the capabilities of icepack on both synthetic and real problems.
+The key features of icepack that these demonstrations aim to highlight are the variety of different physics models implemented and the flexibility of the components of these physics models.
 
 \subsection{MISMIP+}
 
