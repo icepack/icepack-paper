@@ -312,6 +312,8 @@ but users can adjust this to the value of their choice.
 This penalty term smooths over numerical artifacts, especially near the ice margins and termini.
 In these regions the shallow ice approximation is less applicable, so the error in solving a different set of equations is small compared to the inherent modeling error in using these equations in the first place.
 
+We verified the correctness of our implementation by check that numerical results converge at the expected rate to the analytical Beuler profile for a circular symmetric ice sheet \citep{greve2009dynamics}.
+
 The shallow ice approximation applies well in ice-sheet interiors.
 For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \citep{cuffey2010physics, kirchner2016shallow}.
 This approximation does not work well in areas of the ice sheet where the flow has substantial membrane stresses, like fast outlet glaciers.
@@ -339,6 +341,11 @@ When the ice is floating, there are two simplifications: the friction coefficien
 Additionally, the terminal stress term of the action disappears by applying integration by parts to the gravity term.
 Since the action functional for ice shelves has fewer terms than for grounded ice streams, we have defined a separate \texttt{IceShelf} model class.
 The ice shelf and ice stream models share common components, i.e. the viscosity and side wall stress.
+
+We verified the correctness of the ice shelf model by checking that numerical results converge at the expected rate to an analytical solution for the velocity with a linearly sloping thickness in a rectangular domain \citep{greve2009dynamics}.
+When there is basal friction, the shallow stream equations do not have a simple analytical solution.
+To get an exact solution, we chose the ice velocity and thickness a priori and used the computer algebra system SymPy \citep{sympy} to generate a friction coefficient that makes these fields an exact solution.
+We then checked that numerical results converge to this manufactured solution at the expected rate.
 
 Several studies have compared the shallow stream approximation to 3D models such as Blatter-Pattyn or full Stokes \citep{pattyn2013grounding}.
 The most appreciable difference between lower- and higher-order models occurs near the glacier grounding line, where the full Stokes equations can represent bridging stresses \citep{van2013fundamentals}.
@@ -453,13 +460,13 @@ For example, the most commonly used sliding law is the power law
 for some exponent $m$.
 Older research assumed $m = 3$ based on the theory of regelation \citep{weertman1957sliding}, which has since been referred to as the Weertman sliding law.
 When $m = \infty$, the basal shear stress is independing of the sliding speed; this is referred to as perfect plasticity.
-More recently, \citet{schoof2005effect} proposed the functional form
+More recently, \citet{schoof2005effect} proposed an alternative form that acts like the Weertman law when $|u| \ll u_c$ and like the plastic law when $|u| \gg u_c$.
+A simplified form of this model can be expressed as
 \begin{equation}
     \tau_b = -C\left(\frac{|u|}{|u| + u_c}\right)^{\frac{1}{m}}\frac{u}{|u|}
 \end{equation}
 where $u_c$ is some critical speed.
-This sliding law acts like the Weertman law when $|u| \ll u_c$ and like the plastic law when $|u| \gg u_c$.
-This latter equation has been found to agree best with laboratory experiments \citep{zoet2020slip}.
+This latter equation has been found to agree best with laboratory experiments on till \citep{zoet2020slip} and in reproducing observed velocity variations \citep{joughin2019regularized}.
 
 The Weertman and plastic sliding laws possess the same functional form but differ only in the value of a single scalar parameter $m$.
 The Schoof sliding law, on the other hand, has a totally different functional dependence on the velocity.
@@ -467,9 +474,9 @@ Several authors, including Schoof, have proposed that the basal shear stress is 
 Implementing these more sophisticated mathematical models would require adding an extra argument to the procedure for solving the diagnostic equation.
 
 One of our goals with icepack is to facilitate experimentation with the model physics, even for novice users.
-Of the programming languages that are commonly used for scientific computing, only Python and possibly Julia would appear meet these needs.
-To support use cases like implementing the Schoof sliding law, it must be possible to completely alter the functional form of a given model physics component.
-For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model physics component.
+Of the programming languages that are commonly used for scientific computing, only Python and possibly Julia would appear to meet these needs.
+To support use cases like implementing the Schoof sliding law, it must be possible not just to change the value of a single parameter but to completely alter the functional form of a given model component.
+For uses cases like explicitly adding the dependence of basal shear stress on hydrology, it must also be possible to add entirely new fields to a given model component.
 In programming terms, this amounts to changing the number of arguments to the function that calculates basal shear stress, which Python accomodates easily.
 For a library developed in C or Fortran, the user would then also have to change the signature of the diagnostic solve function, which is undesirable.
 In C++, one could avoid changing the signature of the diagnostic solve routine by (1) using variadic templates, (2) wrapping the inputs in a class, or (3) passing all arguments in a dictionary.
@@ -480,7 +487,7 @@ In icepack, users can substitute any diagnostic model component for the paramete
 From the user's perspective, substituting model physics components does not require any advanced language features beyond keyword arguments.
 To understand how this is possible, we'll briefly describe the path that the input fields take through the program.
 \begin{enumerate}
-    \item The user passes all arguments to the diagnostic solve procedure by keyword, essentially in a dictionary mapping names to fields.
+    \item The user passes all arguments to the diagnostic solve procedure by keyword.
     \item The diagnostic solve procedure creates a symbolic representation of the action functional by summing up several terms, like the viscosity, basal friction, etc.
         Calculating these terms is delegated to specialized procedures for each term.
         Each term procedure gets the entire collection of fields.
@@ -774,6 +781,18 @@ An example of the pressure approximations using linear, quadratic, and cubic Leg
 The exact symbolic integration approach is both faster and more accurate than using a large number of quadrature points.
 The same technique could be used to exactly calculate the ocean backpressure for any model, say the full Stokes equations, using terrain-following coordinates together with a Legendre polynomial expansion in the vertical.
 
+\subsection{Performance}
+
+Icepack largely inherits the performance capabilities of the Firedrake package, for which we refer to the benchmarks in \citet{rathgeber2016firedrake}.
+Firedrake is in turn built on PETSc, which includes a rich suite of nonlinear solvers and preconditioners that have been demonstrated to scale up to hundreds of processors \citep{balay2019petsc}.
+Firedrake also includes special features for defining sophisticated solvers and preconditioners that take advantage of problem-specific structure \citep{kirby2018solver}.
+Icepack exposes these tools through the interface of the flow solver objects, so users can select any solver and preconditioner from PETSc.
+
+We have mainly developed icepack for process-scale studies of individual glaciers or drainage basins.
+For the demonstrations presented below, nearly all simulations run in a matter of minutes to hours on a single core.
+Larger problems, such as continental-scale modeling, will require more sophisticated and possibly problem-specific approaches.
+For example, a rudimentary preconditioner for the hybrid model system could use the degree-0 model as the coarse space in a multigrid-type approach.
+These optimizations will be the subject of future work.
 
 \section{Demonstrations}
 
@@ -866,10 +885,11 @@ Otherwise, the sliding ratio is above 0.8 throughout almost the entire domain.
 \end{figure}
 
 Using variational principles to express all constitutive laws is less flexible than specifying the sliding law directly and this is a distinct disadvantage.
-We were able to implement a sliding law that exhibits many of the characteristics of the Schoof sliding law.
+We were nonetheless able to implement a sliding law that exhibits the important characteristics of the Schoof sliding law.
 \citet{asay2016experimental} also suggest using a sliding law that transitions sharply to exact plasticity above the critical speed.
 Expressing this sliding law in UFL requires a conditional in the velocity and is thus no longer differentiable, causing the forward solver to crash.
 The numerical advantages of using variational principles are so great, however, that we view this tradeoff as acceptable.
+Moreover, there are few physical reasons to prefer one form over another, as long as the asymptotic behavior is correct above and below the critical speed.
 
 
 \subsection{Synthetic ice sheet}
