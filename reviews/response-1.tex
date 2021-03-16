@@ -1,0 +1,124 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+%\usepackage{amsfonts}
+\usepackage{amsthm}
+%\usepackage{amssymb}
+%\usepackage{mathrsfs}
+%\usepackage{fullpage}
+%\usepackage{mathptmx}
+%\usepackage[varg]{txfonts}
+\usepackage{color}
+\usepackage[charter]{mathdesign}
+\usepackage[pdftex]{graphicx}
+%\usepackage{float}
+%\usepackage{hyperref}
+%\usepackage[modulo, displaymath, mathlines]{lineno}
+%\usepackage{setspace}
+%\usepackage[titletoc,toc,title]{appendix}
+\usepackage{natbib}
+
+%\linenumbers
+%\doublespacing
+
+\theoremstyle{definition}
+\newtheorem*{defn}{Definition}
+\newtheorem*{exm}{Example}
+
+\theoremstyle{plain}
+\newtheorem*{thm}{Theorem}
+\newtheorem*{lem}{Lemma}
+\newtheorem*{prop}{Proposition}
+\newtheorem*{cor}{Corollary}
+
+\newcommand{\argmin}{\text{argmin}}
+\newcommand{\ud}{\hspace{2pt}\mathrm{d}}
+\newcommand{\bs}{\boldsymbol}
+\newcommand{\PP}{\mathsf{P}}
+\let\divsymb=\div % rename builtin command \div to \divsymb
+\renewcommand{\div}[1]{\operatorname{div} #1} % for divergence
+\newcommand{\Id}[1]{\operatorname{Id} #1}
+
+\begin{document}
+
+\title{Response to review \#1}
+\author{}
+\date{}
+
+\maketitle
+
+Thank you Doug for this helpful review!
+Original comments are in blue, our responses in black.
+
+\section*{Summary}
+
+\textcolor{blue}{In ‘icepack: a new glacier flow modeling package in Python, version 1.0’, Shapero and co-authors present a promising new ice sheet modeling framework. The
+framework contains mechanisms for solving both the prognostic mass balance
+equations for updating ice sheet geometry, as well as diagnostic solvers for approximations to the non-linear Stokes’ equations. Throughout both the software
+and the manuscript describing it, the authors focus on ensuring usability (readability), a trait that is bound to make this software (and paper) frequently used.
+Despite its accessibility, the capabilities of icepack are already impressive, made
+all the more so by its explicit design prioritization of easy extensibility.
+I find the manuscript to be exceptionally well-crafted, and I think that it
+could be published as is. That said, I offer a few suggestions, comments, and
+points of clarification below.}
+
+
+\section*{Minor points}
+
+\begin{description}
+\item[L15-18] \textcolor{blue}{It would be nice to have a cited example or three for each of these
+suggested use cases. This would help the reader identify the kinds of
+practical problems where icepack might fill a need.}
+
+\item[L74] \textcolor{blue}{A low aspect ratio isn’t really an approximation; it’s an existential fact.
+The approximation that the first order approximation makes is that vertical resistive stresses (or bridging stresses as they are referred to later
+in this manuscript) are small, pressure is hydrostatic, and bed slopes are
+small.}
+
+\item[L92] \textcolor{blue}{It would be useful to offer a reference regarding an anisotropic fluidity.}
+
+\item[L100] \textcolor{blue}{Not clear where the Legendre transform enters: the viscous and frictional
+dissipation can be read off from Eq. 4.
+Eqs. 6 and 12 While I understand that it is convenient to manipulate the
+action to reflect the algebraic manipulations to yield the analytical SIA
+solution, the break in symmetry between Eq. 6 and Eq. 12 is frustrating,
+1given that they both are name ‘gravity’, and that they should in some
+sense be the same regardless of which strain rates are assumed to be zero.}
+
+\item[L144] \textcolor{blue}{That the terminal potential term, Eq. 13 disappears is not obvious. This
+should probably be clarified, since many readers will be surprised by this.}
+
+\item[L152] \textcolor{blue}{Cite the method of manufactured solutions.}
+
+\item[L159] \textcolor{blue}{The benefit to avoiding complicated 3D meshing should not be under-
+stated, in addition to the reduction in the cost of computational solution.}
+
+\item[L188] \textcolor{blue}{This is a bit of a red herring, given that impenetrability is a natural
+boundary condition on the incompressibility equation. It can go right
+in the action principle, no extra Lagrange multiplier (besides pressure)
+needed.}
+
+\item[L367] \textcolor{blue}{I’m surprised by this. For challenging geometries, I’ve always needed to
+stabilize even when using implicit Euler. Are you sure that implicit Euler
+is unconditionally stable even for non-linear advection like this?}
+
+\item[L453] \textcolor{blue}{Many advances have occurred in the last 5 years regarding gradient de-
+scent due to its necessity for optimizing neural networks. These may yet
+be useful in this context if you have to deal with a large scale optimization
+problem where forming the Hessian becomes prohibitive.}
+\item[L459] \textcolor{blue}{Gauss-Newton needs a reference if you’re not going to describe it here.
+Eq. 34 It’s worth noting that the Schoof law is phenomenological, and was
+selected because it has the right shape and obeys Iken’s bound. As such,
+if your sliding law obeys Iken’s bound and looks right, then it’s not any
+less valid.}
+\item[L580] \textcolor{blue}{I think that having to specify a variational principle for the sliding law
+is useful because it guarantees a law that is positive (semi-)definite, as it
+must be to be physical.}
+\item[L701–713] \textcolor{blue}{I enjoyed reading this paragraph, but I wonder if stabilizing the
+Stokes’ equations is the best illustration of the point, given that icepack
+does not in fact have Stokes’ equations implemented (although I imagine
+it could be done in short order). Maybe stabilizing a transport equation
+would be a more appropriate case?}
+\end{description}
+
+\end{document}
