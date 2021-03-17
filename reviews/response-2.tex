@@ -86,7 +86,7 @@ revision.}
 
 \begin{enumerate}
 \item \textcolor{blue}{The authors suggest that C++ makes it inherently difficult to add new physics/PDEs (e.g., on p. 10
-1and p. 20), which I somewhat disagree with. One advancement that can make a C++-based code
+and p. 20), which I somewhat disagree with. One advancement that can make a C++-based code
 easy to add to is Automatic Differentiation (AD) - with AD, one can effectively code the weak form
 of the residual within a C++ code and AD will handle the rest, making it very easy to add new
 physics. An example is the Albany/Land Ice model (previously known as Albany/FELIX) of Tezaur
@@ -94,19 +94,57 @@ et al. (https://doi.org/10.5194/gmd-8-1197-2015). I think it would be worth ment
 there have been efforts like Albany/Land Ice out there to make C++-based codes more accessible to
 users of varied backgrounds. I agree that even an “easy-to-use” C++ code will be more difficult and
 more intimidating than a Python code, so I am not trying to minimize the authors’ efforts at all.}
+
+I've added a citation to Tezaur et al. and to another paper from the ISSM group about AD.
+I agree with you about AD tools: they definitely relieve the burden of having to rewrite the code to calculate variational derivatives of functionals of the solutions of the model with respect to input parameters upon changing the model or parameters.
+The experiences I had rolling my own adjoints are what pushed me to tools that would either have AD or a more symbolic approach like what FEniCS, Firedrake, and Devito offer.
+In idiomatic Python it's nonetheless possible to be much more flexible about function signatures than in C++ by virtue of being able to throw arbitrary data into \texttt{kwargs}.
+Now of course you pay for this in that all input validation is done at runtime rather than at compile time.
+
 \item \textcolor{blue}{Can the authors comment on the overhead of the symbolic descriptions/manipulations done by their
 framework? This sounds potentially like it would be very expensive. How does the cost compare to
 automatic differentiation, for example? A broader question is: is computational performance/cost a
 concern for users of icepack, or is it intended to be a “sandbox” in which performance is secondary
 to being able to code up something “quick-and-dirty” for initial prototyping?}
+
+See Rathgeber et al. 2016 for more information about the architecture of Firedrake and for performance benchmarks.
+Loosely speaking, the path through the toolchain goes like this.
+A user creates a symbolic description of the weak form of the PDE they want to solve.
+Firedrake then computes a hash of this expression and looks to see if it has encountered this problem before.
+If not, it does a long, complicated, and expensive series of transformations to generate highly optimized C code that fills the relevant matrices and vectors.
+This C code is then compiled into a dynamic library for later reuse.
+If the user has solved this problem before, Firedrake simply looks up the dynamic library that it already generated.
+(Crucially, the only thing that matters is the symbolic shape of the problem, not the actual data that goes into it -- you don't have to do codegen all over again just because you changed the boundary conditions or forcing.)
+In either case, Firedrake then calls into PETSc's scalable nonlinear equation solvers (SNES) to solve the resulting system of equations.
+As with any just-in-time compiled language, performance is slow the first time the code is run, and faster ever after.
+Most importantly, \textbf{the performance-critical parts are all written in C}.
+Firedrake has been shown to scale up to large problems on thousands of processors.
+
+It is possible to ruin the performance of the application by accidentally hard-coding a floating point value into a symbolic expression of a PDE and then changing that value in a loop.
+For example you could easily make this mistake if you were doing adaptive timestepping on an evolutionary problem discretized via the method of lines.
+The remedy is to wrap this value in a \texttt{firedrake.Constant} object.
+But this kind of performance regression is easily caught using \texttt{htop} and are more a result of programmer error.
+
+For the problems that we have used icepack for so far, we have focused more on individual glaciers or catchments, and thus performance has been a secondary concern.
+We aim to move towards larger continental-scale problems in the future.
+The rate-limiting factor there is more our ability to find the right incantation of PETSc solver options and preconditioners than it is any inherent limitation in our tools.
+
 \item \textcolor{blue}{I was a little bit confused about the reference of the FO Stokes-based model in this paper as a “hybrid
 model”. I see that it is hybrid in the sense that you have a different discretization in the horizontal and
 vertical direction, but there are also hybrid ice models that use different PDEs in different domains,
 e.g., the ISCAL model of Ahlkrona et al. (https://doi.org/10.1016/j.quascirev.2016.01.032).
 Is the term “hybrid model” a common name for the approach in Section 2.2.3? Perhaps it is and I
-am not aware of it.}
-\item \textcolor{blue}{Does the hybrid model described in the paper have the same applicability as say the First Order
+am not aware of it.
+Does the hybrid model described in the paper have the same applicability as say the First Order
 Stokes model? Can it be used for both Greenland and Antarctica at continental scales?}
+
+The fundamental physics are the first-order model obtained by asymptotic expansion of the Stokes equations in the aspect ratio, also known as the Blatter-Pattyn equations.
+What I had imagined is that using only vertical basis functions up to degree 2 essentially defines its own semi-discrete physics model, similar to two- or three-layer ocean models.
+You can view these as very coarse discretizations of the primitive equations, or you can view them as simplified models in their own right.
+But I made this naming choice before there were many other collaborators on the project.
+The ensuing confusion has shown that this was a bad choice of terminology that we'll change in a future version.
+This model can be used for both regions at continental scales -- it can capture but plug and shear flow.
+
 \item \textcolor{blue}{Section 2.2.1: in my opinion, the authors do not provide sufficient justification for the penalty term,
 equation (7). They describe this as something that is added to smooth over artifacts - this would be
 needed based on the discretization, which there is little discussion of. The authors should state what
@@ -131,6 +169,10 @@ I was expecting to see it there, but maybe I’m missing something.}
 \item \textcolor{blue}{P. 10: the discussion here about substituting model components suggests it may be possible to use
 different models in different regions and couple them (a la the ISCAL method). Is this possible, or
 something that the authors are thinking to add to their model/code?}
+
+Implementing this idea will require some new developments to Firedrake, namely first-class support for subdomains, defining different PDEs on different subdomains, and defining matching conditions for the solutions at the interfaces between subdomains.
+The Firedrake developers are working on this feature right now as it's very much in demand.
+We are very much interested in, for example, using SIA in the interior of the ice sheet and SSA in the ice streams and margins, as this would give a much less computationally-intensive way to do some form of whole-ice sheet modeling than using, say, the first order model.
 \item \textcolor{blue}{Section 2.4: This section is very incomplete. You need to give the enthalpy equation and given the
 Glen’s law expression as well, since it is mentioned.}
 \item \textcolor{blue}{In my opinion, there is not enough discussion of the thickness equation (Section 2.1) and how it
@@ -166,7 +208,7 @@ a manufactured problem to ensure that it was implemented correctly?}
 for dealing with bad initial conditions in a Newton solver that relies on homotopy continuation that
 would be worth citing. It is an alternate to the approach you describe that lets you get away with not
 doing a line search for Newton. By the way, it should be no surprise that Newton is not converging
-3without a line search - in general Newton is not guaranteed to converge from an arbitrary initial
+without a line search - in general Newton is not guaranteed to converge from an arbitrary initial
 guess without the line search.}
 \item \textcolor{blue}{Section 4.3, lines 411-412: there are actually ways to construct weighted norms to deal with the issue
 of DOFs having different orders of magnitude for the purpose of convergence.}
@@ -180,6 +222,12 @@ discussion.}
 \item \textcolor{blue}{Section 4.6: The authors mention running their code on 1 core. Is the code parallel - can it be run
 on multiple cores? Are there any hope for performance portability of the code to take advantage of
 emerging HPC architectures, e.g., GPUs?}
+
+Firedrake relies on the package loo.py for code generation, which can target C and OpenCL.
+There is ongoing work with the developers of loo.py to target GPUs and other accelerators by generating OpenCL instead.
+Firedrake is built on PETSc and thus can run on parallel machines.
+See Rathgeber et al. 2016 for performance and scaling benchmarks; Firedrake has been run on problems with millions of degrees of freedom on supercomputers, for example the UK national supercomputer ARCHER.
+
 \item \textcolor{blue}{Section 4.6: Can you please clarify what you mean by the following statement? “Large problems,
 such as continental-scale modeling, will require more sophisticated and possibly problem-specific
 approaches”. I’m wondering in particular about the problem-specific approach part. There are
@@ -190,8 +238,11 @@ functions. Is this something specific to your framework, which requires expressi
 for the symbolic representation?}
 \item \textcolor{blue}{It’s great that you have executable documentation in something easy-to-use such as Jupyter note-
 books! (no need to address this comment)}
-\item \textcolor{blue}{p. 29: are you considering putting in the first-order Stokes//Blatter Pattyn model into your code
+\item \textcolor{blue}{p. 29: are you considering putting in the first-order Stokes/Blatter Pattyn model into your code
 framework?}
+
+The thing that we mistakenly called the ``hybrid'' model is really the first order / Blatter-Pattyn model.
+We have rewritten some of the text to try and make this clearer.
 \item \textcolor{blue}{The methods do not discuss their code development/testing stance on icepack. How do users con-
 tribute to the code - through pull requests? Is there regression/performance testing? Continuous
 integration testing? These are all really important, especially if you have non-experts contributing
@@ -202,13 +253,16 @@ to the code!}
 
 \begin{itemize}
 \item \textcolor{blue}{“UFL” is not defined in the abstract.}
+
+Changed the sentence to: ``Icepack is built on the finite element modeling library Firedrake, which uses the Unified Form Language (UFL), a domain-specific language embedded into Python for describing weak forms of partial differential equations.''
+
 \item \textcolor{blue}{p. 4, line 90: A is also called the “flow factor”. I would mention here that it is usually a function of
 the temperature, which comes from a different equation.}
-\item \textcolor{blue}{p. 5, line 125: should be “checking”, not “check”.}
-\item \textcolor{blue}{p. 5, line 126: I think it should be “Bueler” not “Beuler”, if I’m thinking of the right person.}
+\item \textcolor{blue}{p. 5, line 125: should be “checking”, not “check”.} \checkmark
+\item \textcolor{blue}{p. 5, line 126: I think it should be “Bueler” not “Beuler”, if I’m thinking of the right person.} \checkmark
 \item \textcolor{blue}{p. 5, line 147: change “we verified the correctness of the ice shelf model” to “we verified the correctness
-of our implementation of the ice shelf model”.}
-\item \textcolor{blue}{p. 10, line 270: change “we’ll” to “we will”.}
+of our implementation of the ice shelf model”.} \checkmark
+\item \textcolor{blue}{p. 10, line 270: change “we’ll” to “we will”.} \checkmark
 \end{itemize}
 
 \end{document}

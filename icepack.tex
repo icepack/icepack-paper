@@ -124,7 +124,7 @@
 
 \begin{abstract}
 We introduce a new software package called \emph{icepack} for modeling the flow of glaciers and ice sheets.
-Icepack is built on the finite element modeling library Firedrake, which uses the domain-specific language UFL for describing weak forms of partial differential equations.
+Icepack is built on the finite element modeling library Firedrake, which uses the Unified Form Language (UFL), a domain-specific language embedded into Python for describing weak forms of partial differential equations.
 The diagnostic models in icepack are formulated through action principles that are specified in UFL.
 The components of each action functional can be substituted for different forms of the user's choosing, which makes it easy to experiment with the model physics.
 The action functional itself can be used to define a solver convergence criterion that is independent of the mesh and requires little tuning on the part of the user.
@@ -310,7 +310,7 @@ but users can adjust this to the value of their choice.
 This penalty term smooths over numerical artifacts, especially near the ice margins and termini.
 In these regions the shallow ice approximation is less applicable, so the error in solving a different set of equations is small compared to the inherent modeling error in using these equations in the first place.
 
-We verified the correctness of our implementation by check that numerical results converge at the expected rate to the analytical Beuler profile for a circular symmetric ice sheet \citep{greve2009dynamics}.
+We verified the correctness of our implementation by checking that numerical results converge at the expected rate to the analytical Bueler profile for a circular symmetric ice sheet \citep{greve2009dynamics}.
 
 The shallow ice approximation applies well in ice-sheet interiors.
 For this reason, and because the equations are particularly simple to solve, this approximation has been a common choice for ice-sheet modeling \citep{cuffey2010physics, kirchner2016shallow}.
@@ -340,7 +340,7 @@ Additionally, the terminal stress term of the action disappears after applying i
 Since the action functional for ice shelves has fewer terms than for grounded ice streams, we have defined a separate \texttt{IceShelf} model class.
 The ice shelf and ice stream models share common components, i.e. the viscosity and side wall stress.
 
-We verified the correctness of the ice shelf model by checking that numerical results converge at the expected rate to an analytical solution for the velocity with a linearly sloping thickness in a rectangular domain \citep{greve2009dynamics}.
+We verified the correctness of our implementation of the ice shelf model by checking that numerical results converge at the expected rate to an analytical solution for the velocity with a linearly sloping thickness in a rectangular domain \citep{greve2009dynamics}.
 When there is basal friction, the shallow stream equations do not have a simple analytical solution.
 To get an exact solution, we chose the ice velocity and thickness a priori and used the computer algebra system SymPy \citep{sympy} to generate a friction coefficient that makes these fields an exact solution.
 We then checked that numerical results converge to this manufactured solution at the expected rate \citep{roache2002code}.
@@ -480,10 +480,12 @@ For a library developed in C or Fortran, the user would then also have to change
 In C++, one could avoid changing the signature of the diagnostic solve routine by (1) using variadic templates, (2) wrapping the inputs in a class, or (3) passing all arguments in a dictionary.
 Using variadic templates or wrapping the inputs in a class would require users to know more about generic or object-oriented programming than a novice might.
 Using a dictionary data structure to pass arguments is relatively easier but would be more idiomatic in Python than in C++.
+Some of the difficulty associated with changing the model physics in a C++ code can be alleviated with automatic differentiation tools, which have been used successfully in Albany/FELIX \citep{tezaur2015albany} and ISSM \citep{huck2018usability}.
+Nonetheless, C++ or any language with a stronger type discipline will be much more restrictive about changing function signatures.
 
 In icepack, users can substitute any diagnostic model component for the parameterization of their choosing, including adding new fields.
 From the user's perspective, substituting model physics components does not require any advanced language features beyond keyword arguments.
-To understand how this is possible, we'll briefly describe the path that the input fields take through the program.
+To understand how this is possible, we will briefly describe the path that the input fields take through the program.
 \begin{enumerate}
     \item The user passes all arguments to the diagnostic solve procedure by keyword.
     \item The diagnostic solve procedure creates a symbolic representation of the action functional by summing up several terms, like the viscosity, basal friction, etc.
