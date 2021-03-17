@@ -246,9 +246,9 @@ Action principles are completely equivalent to the usual weak form of a partial 
 
 The most complex and most physically accurate model that we implement is the \emph{first-order} or \emph{Blatter-Pattyn} approximation, a 3D system describing the horizontal velocity \citep{blatter1995velocity, pattyn2003new}.
 (In icepack we refer to our implementation of this equation as a \emph{hybrid model} as it includes both shear and plug flow modes, described below.)
-The only approximation that the first-order model makes is that the flow has a low aspect ratio -- the thickness of the glacier is much less than its horizontal extent.
-This approximation may be questionable around, say, the main trunk of Jakobshavn Isbrae in Greenland, which flows through a very deep and narrow trough.
-Even Jakobshavn has an aspect ratio on the order of 1/5 and almost all glacier flows have an aspect ratio less than 1/10 or even 1/20.
+The first-order model is based on an asymptotic expansion of the Stokes equations in the ratio of the ice thickness to a typical horizontal length scale.
+The aspect ratio of most glacier flows is on the order of 1/20 or less, although there are some exceptions.
+For example, the main trunk of Jakobshavn Isbrae in Greenland flows through a very deep and narrow trough with an aspect ratio closer to 1/5.
 
 From the first-order model, two approximations are possible.
 First, the \emph{shallow ice approximation} (SIA) comes from assuming that vertical shear is the dominant mode of ice flow.
@@ -265,7 +265,7 @@ Glaciers, however, have a nonlinear constitutive relation:
 \end{equation}
 where $A$ is the \emph{fluidity} and $n$ is the \emph{Glen flow law exponent} \citep{cuffey2010physics}.
 The most commonly-used value of the flow law exponent is $n \approx 3$ as determined from laboratory experiments.
-Strictly speaking, the fluidity should be a tensor field, but is almost universally treated as a scalar.
+Strictly speaking, the fluidity should be a tensor field, but is almost universally treated as a scalar \citep{gillet2006flow}.
 
 All of the diagnostic models in icepack are described through \emph{variational} or \emph{action} principles \citep{dukowicz2010consistent}.
 Rather than describe the velocity as the weak solution of a nonlinear PDE, an action principle instead states that the velocity minimizes a functional called the action.
@@ -276,9 +276,7 @@ The action consists of four terms:
     \label{action-functional}
 \end{align}
 where $dz\,dx$ denotes integration over the entire glacier, $dx$ denotes integration over the glacier footprint, and $dz\,d\gamma$ over the side wall boundary.
-The action has units of power (energy/time) and can be related to the rate of decrease of the thermodynamic free energy.
-Moreover, the energy lost to viscous and frictional heating can be calculated from the action and its Legendre transform.
-The action principle can be viewed as a consequence of the Onsager reciprocity relations for systems near to equilibrium \citep{de2013non}.
+The action has units of power (energy/time) and can be related to the rate of decrease of the thermodynamic free energy \citep{de2013non}.
 
 Every diagnostic model in icepack is encapsulated in its own Python class.
 The key responsibility of the model classes is to take in the input fields -- the ice thickness, velocity, etc. -- and return a symbolic description of the action functional in UFL.
@@ -338,14 +336,14 @@ When the ice is floating, there are two simplifications: the friction coefficien
 \begin{equation}
     s = (1 - \rho_I / \rho_W)h.
 \end{equation}
-Additionally, the terminal stress term of the action disappears by applying integration by parts to the gravity term.
+Additionally, the terminal stress term of the action disappears after applying integration by parts to the gravity term to shift the gradient of the surface elevation over onto the velocity.
 Since the action functional for ice shelves has fewer terms than for grounded ice streams, we have defined a separate \texttt{IceShelf} model class.
 The ice shelf and ice stream models share common components, i.e. the viscosity and side wall stress.
 
 We verified the correctness of the ice shelf model by checking that numerical results converge at the expected rate to an analytical solution for the velocity with a linearly sloping thickness in a rectangular domain \citep{greve2009dynamics}.
 When there is basal friction, the shallow stream equations do not have a simple analytical solution.
 To get an exact solution, we chose the ice velocity and thickness a priori and used the computer algebra system SymPy \citep{sympy} to generate a friction coefficient that makes these fields an exact solution.
-We then checked that numerical results converge to this manufactured solution at the expected rate.
+We then checked that numerical results converge to this manufactured solution at the expected rate \citep{roache2002code}.
 
 Several studies have compared the shallow stream approximation to 3D models such as Blatter-Pattyn or full Stokes \citep{pattyn2013grounding}.
 The most appreciable difference between lower- and higher-order models occurs near the glacier grounding line, where the full Stokes equations can represent bridging stresses \citep{van2013fundamentals}.
@@ -713,7 +711,7 @@ The BFGS method uses the past $m$ iterations of the algorithm to compute a low-r
 The BFGS method converges faster than gradient descent.
 However, it suffers from many of the same brittleness issues in the initial iterations before it has built up enough history to approximate the Hessian inverse.
 
-Finally, the Gauss-Newton solver defines an approximation to the ``first-order'' part of the objective functional Hessian.
+Finally, the Gauss-Newton solver defines an approximation to the ``first-order'' part of the objective functional Hessian \citep{pratt1998gauss}.
 Each iteration of Gauss-Newton is more expensive than that of BFGS or gradient descent because it requires the solution of a more complex linear system than just the mass matrix.
 The Gauss-Newton method converges fastest by far in virtually every test case we have found, in some instances by up to factor of 50.
 
@@ -820,8 +818,8 @@ The second alternative is the Schoof sliding law \citep{schoof2005effect}:
 where the critical stress $\tau_c$ is a certain specified fraction of the water pressure in the subglacial hydrological system.
 Sliding laws in icepack are not expressed directly, but rather as the the derivative of an action functional.
 To implement the Schoof sliding law we need to know the antiderivative of equation \eqref{eq:schoof-sliding}.
-Using a computer algebra system, we found that the antiderivative of this expression in terms of hypergeometric functions.
-The Unified Form Language has several transcendental functions (sine, cosine, exponential, etc.), but it does not currently support hypergeometric functions.
+We found the antiderivative of this expression using a computer algebra system, but the result includes hypergeometric functions.
+The Unified Form Language has several transcendental functions (sine, cosine, exponential, etc.) but it does not currently support hypergeometric functions.
 Instead, we implemented a sliding relation that exhibits the important features of the Schoof law, i.e. it behaves like an $m = 3$ power law at low sliding speeds and $m = \infty$ at high sliding speeds, but which is more tractable algebraically.
 Knowing the critical stress $\tau_c$ and the friction coefficient $C$, which has units of stress $\times$ speed${}^{-1/m}$, we can define a \emph{critical speed} $u_c$ as
 \begin{equation}
@@ -836,6 +834,8 @@ Figure \ref{fig:sliding-laws} shows a comparison of the original Schoof sliding 
 The two have the same asymptotic behavior when the speed is much smaller or much larger than the critical speed; they differ in a relatively small range around the critical speed.
 The relative difference in basal shear stress between the two sliding laws is less than 10\% throughout the entire range.
 Although figure \ref{fig:sliding-laws} shows a comparison of both sliding laws with the same value of the critical speed, by using different values, the agreement between our sliding law can be brought into much closer agreement with the Schoof law.
+Finally, the Schoof law itself is phenomenological.
+A different sliding law with the right asymptotic behavior is no more or less valid.
 
 \begin{figure}[h]
     \includegraphics[width=0.95\linewidth]{demos/sliding/sliding-law.png}
@@ -889,7 +889,6 @@ We were nonetheless able to implement a sliding law that exhibits the important 
 \citet{asay2016experimental} also suggest using a sliding law that transitions sharply to exact plasticity above the critical speed.
 Expressing this sliding law in UFL requires a conditional in the velocity and is thus no longer differentiable, causing the forward solver to crash.
 The numerical advantages of using variational principles are so great, however, that we view this tradeoff as acceptable.
-Moreover, there are few physical reasons to prefer one form over another, as long as the asymptotic behavior is correct above and below the critical speed.
 
 
 \subsection{Synthetic ice sheet}
