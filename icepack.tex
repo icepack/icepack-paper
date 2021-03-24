@@ -193,13 +193,16 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
         $u$ & velocity \\
         $\dot a_s$ & surface mass balance \\
         $\dot a_b$ & basal mass balance \\
-        $\dot\varepsilon$ & strain rate \\
+        $\dot\varepsilon$ & strain rate, $\frac{1}{2}(\nabla u + \nabla u^\top)$\\
         $C$ & bed friction coefficient \\
         $A$ & rheology coefficient \\
         $\nu$ & unit outward normal \\
-        $J$ & action functional
+        $J$ & action functional \\
+        $\Omega$ & spatial domain \\
+        $\Gamma$ & calving terminus
     \end{tabular}
     \caption{Mathematical symbols}
+    \label{tab:mathematical-symbols}
 \end{table}
 
 \begin{table}[h]
@@ -213,8 +216,11 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
         $g$ & gravitational acceleration
     \end{tabular}
     \caption{Physical constants}
+    \label{tab:physical-constants}
 \end{table}
 
+In this section, we'll describe the mathematical formulation of each of the models implemented in icepack.
+See table \ref{tab:mathematical-symbols} for definitions of all mathematical symbols and table \ref{tab:physical-constants} for physical constants.
 
 \subsection{Prognostic model}
 
@@ -437,10 +443,11 @@ In any case, the code is the same regardless of how one views the underlying mat
 
 The user then has to decide how many vertical modes are sufficient.
 Using only degree 0 is exactly equivalent to the shallow stream approximation and we use this fact as a ``smoke test'' for the hybrid model.
-The degree 2 model is the most minimalistic model that still exhibits vertical shear and can satisfy the zero-stress boundary condition at the ice surface.
-Going to higher degree gives a more accurate approximation at the expense of greater computational effort.
+The degree-2 model is the most minimalistic model that still exhibits vertical shear and can satisfy the zero-stress boundary condition at the ice surface.
+Going up to a degree-4 model is sufficient to capture the exact solution for the shallow ice approximation.
+In the tutorial notebooks for icepack, we use up to degrees 2 and 4, but the test suite checks up to degree 8.
 
-\citet{brinkerhoff2015dynamics} used a similar approach to the one described above, with a one vertical basis function for plug flow and one for shear flow.
+\citet{brinkerhoff2015dynamics} used a similar approach to the one described above, with one vertical basis function for plug flow and one for shear flow.
 The shear flow basis function was chosen to be exact assuming the SIA balance with cold ice, together with a heuristic approximation for polythermal ice.
 By contrast, our approach allows for an arbitrary number of shear modes, although using a high-degree basis in the presence of a cold-temperate transition surface will introduce ringing artifacts.
 In principle, one could confront this problem by using two layers -- one cold and one temperate -- instead of a single layer.
@@ -645,6 +652,7 @@ There is no guarantee that an adequate amount for one problem will work well on 
 This issue rarely appears on realistic input data, but when solving inverse problems, the intermediate guesses for the inferred field can be wildly unrealistic before converging.
 A forward model solver that is not sufficiently robust can crash in these extreme scenarios.
 By contrast, a damped Newton procedure using a line search that satisfies the Armijo-Wolfe criteria is guaranteed to converge on non-degenerate, if unrealistic, input data.
+The line search method that we used here is one way to achieve global convergence of Newton's method, but there are other approaches to achieve global convergence, for example homotopy continuation \citep{tezaur2015albany} or the trust region method \citep{bellavia2007globalization}.
 
 
 \subsection{Convergence metrics} \label{sec:convergence-criteria}
@@ -790,7 +798,10 @@ Icepack exposes these tools through the interface of the flow solver objects, so
 
 We have mainly developed icepack for process-scale studies of individual glaciers or drainage basins.
 For the demonstrations presented below, nearly all simulations run in a matter of minutes to hours on a single core.
-Larger problems, such as continental-scale modeling, will require more sophisticated and possibly problem-specific approaches.
+We have used sparse LU factorization to solve linear systems for many problem instances in order to eliminate the linear solver as a possible failure mode.
+Defaulting to a robust solution method is especially important for onboarding novice users who may not be familiar with different iterative linear solvers and preconditioners.
+Larger problems, such as continental-scale modeling, will require solving the diagnostic equations using the conjugate gradient method with an appropriate preconditioner to achieve parallel scalability.
+The particular structure of the problems we solve may be useful in choosing a preconditioner.
 For example, a rudimentary preconditioner for the hybrid model system could use the degree-0 model as the coarse space in a multigrid-type approach.
 These optimizations will be the subject of future work.
 

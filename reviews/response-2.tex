@@ -95,11 +95,12 @@ there have been efforts like Albany/Land Ice out there to make C++-based codes m
 users of varied backgrounds. I agree that even an “easy-to-use” C++ code will be more difficult and
 more intimidating than a Python code, so I am not trying to minimize the authors’ efforts at all.}
 
+I hope this paragraph made the point more that we had specific goals that could better be achieved in Python and not as some blanket condemnation of C++ -- I don't like being dogmatic about language choice.
 I've added a citation to Tezaur et al. and to another paper from the ISSM group about AD.
 I agree with you about AD tools: they definitely relieve the burden of having to rewrite the code to calculate variational derivatives of functionals of the solutions of the model with respect to input parameters upon changing the model or parameters.
 The experiences I had rolling my own adjoints are what pushed me to tools that would either have AD or a more symbolic approach like what FEniCS, Firedrake, and Devito offer.
 In idiomatic Python it's nonetheless possible to be much more flexible about function signatures than in C++ by virtue of being able to throw arbitrary data into \texttt{kwargs}.
-Now of course you pay for this in that all input validation is done at runtime rather than at compile time.
+Now of course you pay for this in that all input validation is done at runtime rather than at compile time, but it's a tradeoff we had to make.
 
 \item \textcolor{blue}{Can the authors comment on the overhead of the symbolic descriptions/manipulations done by their
 framework? This sounds potentially like it would be very expensive. How does the cost compare to
@@ -143,7 +144,7 @@ What I had imagined is that using only vertical basis functions up to degree 2 e
 You can view these as very coarse discretizations of the primitive equations, or you can view them as simplified models in their own right.
 But I made this naming choice before there were many other collaborators on the project.
 The ensuing confusion has shown that this was a bad choice of terminology that we'll change in a future version.
-This model can be used for both regions at continental scales -- it can capture but plug and shear flow.
+This model can be used for both regions at continental scales -- it can capture both plug and shear flow.
 
 \item \textcolor{blue}{Section 2.2.1: in my opinion, the authors do not provide sufficient justification for the penalty term,
 equation (7). They describe this as something that is added to smooth over artifacts - this would be
@@ -154,6 +155,9 @@ is needed? Why is stabilization needed only for the SIA? I think these things sh
 is the boundary, and which boundary you are referring to. One can figure it out, but it is not precise.
 $\Omega$ is not defined either though one will assume invariably that this is an open bounded domain in 2D
 or 3D depending on which approximation one is looking at.}
+
+These were not stated explicitly anywhere.
+We've added them to table 1.
 \item \textcolor{blue}{The boundary conditions are not discussed very rigorously systematically - the authors seem to
 sprinkle in some boundary conditions here and there. I think the boundary conditions need to be
 given for each of the models at the time the models are presented - boundary conditions are needed
@@ -162,10 +166,15 @@ to complete the definition of each models.}
 there is no expression given for the strains $\dot\epsilon(u)$.
 This is one of the things I cam across that need to
 be made more precise.}
+
+This was stated in table 1 but we've added the definition as $\frac{1}{2}(\nabla u + \nabla u^\top)$ and added a sentence to the text referring readers to table 1.
 \item \textcolor{blue}{Section 2.2.3: the authors comment that higher degree polynomials can be used in the vertical layer
 in the hybrid approach. What order is typically used?}
-\item \textcolor{blue}{Section 2.2.3: this might be a naive question, but does Glen’s flow law come into the hybrid model?
-I was expecting to see it there, but maybe I’m missing something.}
+
+Added the following text: ``Going up to a degree-4 model is sufficient to capture the exact solution for the shallow ice approximation.
+In the tutorial notebooks for icepack, we use up to degrees 2 and 4, but the test suite checks up to degree 8.''
+\item \textcolor{blue}{Section 2.2.3: this might be a naive question, but does Glen's flow law come into the hybrid model?
+I was expecting to see it there, but maybe I'm missing something.}
 \item \textcolor{blue}{P. 10: the discussion here about substituting model components suggests it may be possible to use
 different models in different regions and couple them (a la the ISCAL method). Is this possible, or
 something that the authors are thinking to add to their model/code?}
@@ -174,18 +183,19 @@ Implementing this idea will require some new developments to Firedrake, namely f
 The Firedrake developers are working on this feature right now as it's very much in demand.
 We are very much interested in, for example, using SIA in the interior of the ice sheet and SSA in the ice streams and margins, as this would give a much less computationally-intensive way to do some form of whole-ice sheet modeling than using, say, the first order model.
 \item \textcolor{blue}{Section 2.4: This section is very incomplete. You need to give the enthalpy equation and given the
-Glen’s law expression as well, since it is mentioned.}
+Glen's law expression as well, since it is mentioned.}
 \item \textcolor{blue}{In my opinion, there is not enough discussion of the thickness equation (Section 2.1) and how it
 is discretized. In typical ice sheet models, this equation is used to change the ice extent - one
-meshes up a region of “potential” ice, and then uses the thickness to dynamically determine a mask
+meshes up a region of ``potential'' ice, and then uses the thickness to dynamically determine a mask
 for ice-covered regions. Do you do something like this in your model? It should be discussed for
 completeness. I think you maybe start to do this in Section 4.1, but it is very confusing and hard to
 make the connection.}
 \item \textcolor{blue}{What sort of meshes do you use in your model (in the horizontal dimension, for the hybrid one)?
 Structured/unstructured? Hex/tet (quad/tri)?}
+
+We use unstructured triangular meshes although Firedrake in principle can use unstructured quad meshes.
 \item \textcolor{blue}{Section 3: It is not clear from the description what the inverse problem you are describing is for.
-Is it to obtain parameters in the model like the basal friction using observational data of e.g. sur-
-face velocity? There really needs to be more discussion here, and I personally would like to see
+Is it to obtain parameters in the model like the basal friction using observational data of e.g. surface velocity? There really needs to be more discussion here, and I personally would like to see
 a mathematical statement of a representative inverse problem you are solving. It would be worth
 citing the work Perego et al. on optimization-based inversion, if what you are doing is similar:
 https://doi.org/10.1002/2014JF003181. BTW, the basal friction has not been defined, yet it is
@@ -193,14 +203,14 @@ discussed - it needs to be defined earlier, when talking about boundary conditio
 be added).}
 \item \textcolor{blue}{Section 4.1: I find this section confusing. I assume you are talking about discretizing the thickness
 equation here - that should be made clear. I disagree with several statements in this section as
-well. “The simplest explicit timestepping schemes are unstable with CG finite elements” - if you are
+well. ``The simplest explicit timestepping schemes are unstable with CG finite elements'' - if you are
 talking about CFL stability, this is not true. You need to satisfy a CFL condition which could give
-rise to very small time-steps but you can get the scheme to be stable. I’m also confused about the
+rise to very small time-steps but you can get the scheme to be stable. I'm also confused about the
 notion of SUPG as a time-stepping scheme - I think of SUPG as a finite element approach to deal
 with advection-dominated flow problems, for example, that does not have anything to do with time-
 stepping. Maybe you are referring to upwinding? In any case, I think SUPG has nothing to do with
 forward Euler, so the discussion about forward Euler requiring parameters is erroneous. Additionally,
-I don’t understand the comment about implicit Euler smoothing out sharp discontinuities... I believe
+I don't understand the comment about implicit Euler smoothing out sharp discontinuities... I believe
 explicit and implicit Euler have effectively the same diffusion and dispersion properties, so there
 should not really be a difference between the schemes. Did the authors verify their time-stepper on
 a manufactured problem to ensure that it was implemented correctly?}
@@ -210,8 +220,15 @@ would be worth citing. It is an alternate to the approach you describe that lets
 doing a line search for Newton. By the way, it should be no surprise that Newton is not converging
 without a line search - in general Newton is not guaranteed to converge from an arbitrary initial
 guess without the line search.}
+
+Added a reference to the Albany paper as well as another one on trust region methods.
+We described a fairly rudimentary line search method in more detail than perhaps is necessary for a reader who's a seasoned modeler.
+It's a bit of a pet peeve of mine when papers just say ``We used Newton!'' without any attention to the globalization strategy, which can make a huge difference to the solver robustness.
 \item \textcolor{blue}{Section 4.3, lines 411-412: there are actually ways to construct weighted norms to deal with the issue
 of DOFs having different orders of magnitude for the purpose of convergence.}
+
+I think you can use a lumped mass matrix as the $H_0$ in BFGS too, but I find it to be far preferable to use something like Gauss-Newton which gives mesh-independent convergence and which achieves close to the second-order rate of full Newton on many problems.
+No change to the text.
 \item \textcolor{blue}{Section 4.4: Again, it is not clear to me what is your inverse problem. You need to state this explicitly
 so it is clear.}
 \item \textcolor{blue}{Section 4.5.1: you talk about problems defined on “extruded geometries” - do you ever use non-
@@ -228,16 +245,36 @@ There is ongoing work with the developers of loo.py to target GPUs and other acc
 Firedrake is built on PETSc and thus can run on parallel machines.
 See Rathgeber et al. 2016 for performance and scaling benchmarks; Firedrake has been run on problems with millions of degrees of freedom on supercomputers, for example the UK national supercomputer ARCHER.
 
-\item \textcolor{blue}{Section 4.6: Can you please clarify what you mean by the following statement? “Large problems,
+\item \textcolor{blue}{Section 4.6: Can you please clarify what you mean by the following statement? ``Large problems,
 such as continental-scale modeling, will require more sophisticated and possibly problem-specific
-approaches”. I’m wondering in particular about the problem-specific approach part. There are
+approaches''. I’m wondering in particular about the problem-specific approach part. There are
 models like first order Stokes that can be used at the continental scale and they are not really
 problem specific.}
-\item \textcolor{blue}{p. 20: I don’t understand why you need to create an analytical expression of (32) using special
+
+We have clarified the text to state that ``problem-specific'' refers more to the strategies we use to solve the resulting nonlinear systems of equations rather than to what equations are being solved, e.g. Stokes vs first-order Stokes:
+``For the demonstrations presented below, nearly all simulations run in a matter of minutes to hours on a single core.
+We have used sparse LU factorization to solve linear systems for many problem instances in order to eliminate the linear solver as a possible failure mode.
+Defaulting to a robust solution method is especially important for onboarding novice users who may not be familiar with different iterative linear solvers and preconditioners.
+Larger problems, such as continental-scale modeling, will require solving the diagnostic equations using the conjugate gradient method with an appropriate preconditioner to achieve parallel scalability.
+The particular structure of the problems we solve may be useful in choosing a preconditioner.
+For example, a rudimentary preconditioner for the hybrid model system could use the degree-0 model as the coarse space in a multigrid-type approach.
+These optimizations will be the subject of future work.''
+
+Since we use a modal basis in the vertical to discretize solutions of the 3D model, we can devise a p-type multigrid scheme along this axis.
+This is an example of using problem-specific knowledge to choose a solution strategy.
+Just using LU or throwing a black-box algebraic multigrid preconditioner at it would be failing to use this special structure.
+
+\item \textcolor{blue}{p. 20: I don't understand why you need to create an analytical expression of (32) using special
 functions. Is this something specific to your framework, which requires expressions in a certain form
 for the symbolic representation?}
-\item \textcolor{blue}{It’s great that you have executable documentation in something easy-to-use such as Jupyter note-
-books! (no need to address this comment)}
+
+We don't need an analytical expression of equation 32, but rather of the antiderivative of that function with respect to $u$.
+This problem is specific to icepack because we have made the choice to use action principles to describe all of the diagnostic models.
+A package that also made the choice to use action principles but which was built on a different finite element modeling library or coded in an entirely different language would also need the antiderivative of this function.
+We are hampered by the fact UFL does not include support for hypergeometric functions.
+If we were instead writing everything from scratch in C++, we could call into Boost or GSL to evaluate hypergeometric functions.
+We believe that the benefits outweight the costs but this is a definite drawback of our approach.
+\item \textcolor{blue}{It's great that you have executable documentation in something easy-to-use such as Jupyter notebooks! (no need to address this comment)}
 \item \textcolor{blue}{p. 29: are you considering putting in the first-order Stokes/Blatter Pattyn model into your code
 framework?}
 
@@ -252,17 +289,17 @@ to the code!}
 \section*{Minor comments}
 
 \begin{itemize}
-\item \textcolor{blue}{“UFL” is not defined in the abstract.}
+\item \textcolor{blue}{``UFL'' is not defined in the abstract.}
 
 Changed the sentence to: ``Icepack is built on the finite element modeling library Firedrake, which uses the Unified Form Language (UFL), a domain-specific language embedded into Python for describing weak forms of partial differential equations.''
 
-\item \textcolor{blue}{p. 4, line 90: A is also called the “flow factor”. I would mention here that it is usually a function of
+\item \textcolor{blue}{p. 4, line 90: A is also called the ``flow factor''. I would mention here that it is usually a function of
 the temperature, which comes from a different equation.}
-\item \textcolor{blue}{p. 5, line 125: should be “checking”, not “check”.} \checkmark
-\item \textcolor{blue}{p. 5, line 126: I think it should be “Bueler” not “Beuler”, if I’m thinking of the right person.} \checkmark
-\item \textcolor{blue}{p. 5, line 147: change “we verified the correctness of the ice shelf model” to “we verified the correctness
-of our implementation of the ice shelf model”.} \checkmark
-\item \textcolor{blue}{p. 10, line 270: change “we’ll” to “we will”.} \checkmark
+\item \textcolor{blue}{p. 5, line 125: should be ``checking'', not ``check''.} \checkmark
+\item \textcolor{blue}{p. 5, line 126: I think it should be ``Bueler'' not ``Beuler'', if I'm thinking of the right person.} \checkmark
+\item \textcolor{blue}{p. 5, line 147: change ``we verified the correctness of the ice shelf model'' to ``we verified the correctness
+of our implementation of the ice shelf model''.} \checkmark
+\item \textcolor{blue}{p. 10, line 270: change ``we'll'' to ``we will''.} \checkmark
 \end{itemize}
 
 \end{document}
