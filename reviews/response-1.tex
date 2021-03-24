@@ -52,9 +52,9 @@ Original comments are in blue, our responses in black.
 
 \section*{Summary}
 
-\textcolor{blue}{In ‘icepack: a new glacier flow modeling package in Python, version 1.0’, Shapero and co-authors present a promising new ice sheet modeling framework. The
+\textcolor{blue}{In `icepack: a new glacier flow modeling package in Python, version 1.0', Shapero and co-authors present a promising new ice sheet modeling framework. The
 framework contains mechanisms for solving both the prognostic mass balance
-equations for updating ice sheet geometry, as well as diagnostic solvers for approximations to the non-linear Stokes’ equations. Throughout both the software
+equations for updating ice sheet geometry, as well as diagnostic solvers for approximations to the non-linear Stokes equations. Throughout both the software
 and the manuscript describing it, the authors focus on ensuring usability (readability), a trait that is bound to make this software (and paper) frequently used.
 Despite its accessibility, the capabilities of icepack are already impressive, made
 all the more so by its explicit design prioritization of easy extensibility.
@@ -70,7 +70,9 @@ points of clarification below.}
 suggested use cases. This would help the reader identify the kinds of
 practical problems where icepack might fill a need.}
 
-\item[L74] \textcolor{blue}{A low aspect ratio isn’t really an approximation; it’s an existential fact.
+We've added one or two references for each.
+
+\item[L74] \textcolor{blue}{A low aspect ratio isn't really an approximation; it’s an existential fact.
 The approximation that the first order approximation makes is that vertical resistive stresses (or bridging stresses as they are referred to later
 in this manuscript) are small, pressure is hydrostatic, and bed slopes are
 small.}
@@ -92,7 +94,7 @@ Other reviewers didn't find this digression useful so we've removed it.
 \item[Eqs. 6 and 12]\textcolor{blue}{While I understand that it is convenient to manipulate the
 action to reflect the algebraic manipulations to yield the analytical SIA
 solution, the break in symmetry between Eq. 6 and Eq. 12 is frustrating,
-1given that they both are name ‘gravity’, and that they should in some
+given that they both are name `gravity', and that they should in some
 sense be the same regardless of which strain rates are assumed to be zero.}
 
 \item[L144] \textcolor{blue}{That the terminal potential term, Eq. 13 disappears is not obvious. This
@@ -124,7 +126,7 @@ In the next sentence we cited a paper from the Elmer/Ice group where they devise
 You can also do it with Nitsche's method for linear problems but to my knowledge no one has figured that out for power-law fluids.
 I think that the natural boundary condition you're thinking of in most weak formulations of the Stokes equations is that the average of the pressure is zero.
 
-\item[L367] \textcolor{blue}{I’m surprised by this. For challenging geometries, I’ve always needed to
+\item[L367] \textcolor{blue}{I'm surprised by this. For challenging geometries, I've always needed to
 stabilize even when using implicit Euler. Are you sure that implicit Euler
 is unconditionally stable even for non-linear advection like this?}
 
@@ -140,8 +142,7 @@ Both schemes give good results when the mesh is sufficiently refined; the Lax-We
 So this could be more an issue of spatial resolution than stability of the timestepping scheme.
 You're right that saving users from having to think about the CFL condition doesn't completely alleviate all the difficulties and we state as much in the next sentence.
 
-\item[L453] \textcolor{blue}{Many advances have occurred in the last 5 years regarding gradient de-
-scent due to its necessity for optimizing neural networks. These may yet
+\item[L453] \textcolor{blue}{Many advances have occurred in the last 5 years regarding gradient descent due to its necessity for optimizing neural networks. These may yet
 be useful in this context if you have to deal with a large scale optimization
 problem where forming the Hessian becomes prohibitive.}
 
@@ -152,13 +153,13 @@ Using the Hessian or an approximation does that.
 The acceleration tricks for first-order optimization methods are really amazing but I've yet to find a nice way to adapt them to problems posed over Sobolev spaces.
 By contrast, I know that I can scale second-order methods to larger problems than we're solving now by using matrix-free application of the Hessian and coming up with better preconditioners.
 
-\item[L459] \textcolor{blue}{Gauss-Newton needs a reference if you’re not going to describe it here.}
+\item[L459] \textcolor{blue}{Gauss-Newton needs a reference if you're not going to describe it here.}
 
 We added a reference to Pratt et al. 1998 which, although focused on applications in seismology, I think does a better job describing it than any other reference.
 
-\item[Eq. 34] \textcolor{blue}{It’s worth noting that the Schoof law is phenomenological, and was
-selected because it has the right shape and obeys Iken’s bound. As such,
-if your sliding law obeys Iken’s bound and looks right, then it’s not any
+\item[Eq. 34] \textcolor{blue}{It's worth noting that the Schoof law is phenomenological, and was
+selected because it has the right shape and obeys Iken's bound. As such,
+if your sliding law obeys Iken's bound and looks right, then it's not any
 less valid.}
 
 This was stated around line 586 but it makes more sense to say that earlier in the text.
@@ -172,9 +173,9 @@ I'm not completely sure what you mean.
 If the basal shear stress has the wrong sign this is arguably just as easy to check by looking at the action functional as it is a nonlinear system of equations.
 If you mean that the action has to be convex then this isn't true, the sliding law could be rate-weakening, but then there might be multiple steady states.
 
-\item[L701–713] \textcolor{blue}{I enjoyed reading this paragraph, but I wonder if stabilizing the
-Stokes’ equations is the best illustration of the point, given that icepack
-does not in fact have Stokes’ equations implemented (although I imagine
+\item[L701-713] \textcolor{blue}{I enjoyed reading this paragraph, but I wonder if stabilizing the
+Stokes equations is the best illustration of the point, given that icepack
+does not in fact have Stokes equations implemented (although I imagine
 it could be done in short order). Maybe stabilizing a transport equation
 would be a more appropriate case?}
 
