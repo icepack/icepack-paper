@@ -196,6 +196,7 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
         $\dot\varepsilon$ & strain rate, $\frac{1}{2}(\nabla u + \nabla u^\top)$\\
         $C$ & bed friction coefficient \\
         $A$ & rheology coefficient \\
+        $E$ & enthalpy density \\
         $\nu$ & unit outward normal \\
         $J$ & action functional \\
         $\Omega$ & spatial domain \\
@@ -213,6 +214,8 @@ The diagnostic and prognostic equations can then be supplemented with evolution 
         $m$ & Weertman sliding law exponent \\
         $\rho_I$ & ice density \\
         $\rho_W$ & seawater density \\
+        $c$ & specific heat capacity of ice \\
+        $L$ & latent heat of melting of ice \\
         $g$ & gravitational acceleration
     \end{tabular}
     \caption{Physical constants}
@@ -518,17 +521,47 @@ The preference for argument passing by name is specific to this use case, howeve
 \subsection{Heat transport} \label{sec:heat-transport}
 
 We implemented the enthalpy transport model described in \citet{aschwanden2012enthalpy}.
-The enthalpy describes the heat content of the material in a way that incorporates both temperature and latent heat stored in meltwater.
+The enthalpy density $E$ describes the heat content of the material in a way that incorporates both temperature $T$ and latent heat stored in meltwater:
+\begin{equation}
+    E = \rho_I(cT + Lf)
+\end{equation}
+where $L$ is the latent heat of melting of ice and $f$ is the melt fraction.
+The melt fraction can only be positive when the ice as at the pressure-melting point.
 The temperature and meltwater fraction can be uniquely calculated at any point from the value of the enthalpy, so nothing is sacrificed in describing heat content one way or the other.
 Using the enthalpy has the advantage of circumventing many of the difficulties associated with tracking the interface between cold and temperate ice.
 Our implementation of the model uses all of the simplifying assumptions described in \citet{aschwanden2012enthalpy}, for example that horizontal diffusion is negligible and that heat capacity and conductivity are not temperature-dependent within each phase.
+The resulting PDE is
+\begin{equation}
+    \left(\frac{\partial}{\partial t} + \nabla\cdot u\right)E - \frac{\partial}{\partial z}\alpha\frac{\partial E}{\partial z} = q
+\end{equation}
+where $u$ is the full 3D velocity, $\alpha$ the (temperature-dependent) thermal diffusivity, and $q$ the volumetric heat sources.
+This form assumes some amount of vertical diffusion of water at the melting point.
+A realistic treatment would require treating the ice as a porous medium and modeling englacial water transport explicitly, which we have not done.
+The boundary condition at the ice base is a fixed flux of heat from geothermal sources or from the oceans.
+We depart from \citet{aschwandend2012enthalpy} in one respect.
+Rather than fix the ice surface temperature to the atmospheric temperature, we instead use a Robin boundary condition that makes the ice temperature adjust to the external temperature:
+\begin{equation}
+    -\alpha\frac{\partial E}{\partial z}\Big|_{z = s} = \kappa(E - E_s)
+\end{equation}
+where $\kappa$ is a surface exchange coefficient and $E_s$ is the temperature-equivalent enthalpy that forces the surface.
+Using a Robin instead of a Dirichlet boundary condition at the surface allows for more gradual adjustment to above-freezing temperatures that might otherwise create areas of unrealistically high melt fraction.
+Except in blue ice areas, the thermal contact between ice and the atmosphere is mediated by firn, which we do not model explicitly.
+The Robin boundary condition is a compromise to work around this missing component of the system.
+Finally, if there is an upstream boundary the user must provide the inflow values of the enthalpy with depth, while outflow boundary conditions are applied at the glacier terminus.
 
+The heat transport model assumes that the user will supply a volumetric heating rate, but the model itself does not calculate the heating rate from other fields.
+The simplest description for the shear heating rate is
+\begin{equation}
+    q = \tau : \dot\varepsilon = A^{\frac{-1}{n}}|\dot\varepsilon(u)|^{\frac{1}{n} + 1}.
+\end{equation}
 The fluidity factor $A$ in Glen's law is roughly a known function of both temperature and melt fraction and we have included this function in the package.
 Having some description of heat transport is thus necessary for describing realistic glacier flows, but it is not sufficient by itself.
-For one, while the dependence of fluidity on temperature is known fairly well from laboratory experiments, the dependence on melt fraction is known with much less certainty.
+While the dependence of fluidity on temperature is known fairly well from laboratory experiments, the dependence on melt fraction is known with much less certainty \citep{cuffey2010physics}.
 It is likely that users of this module will want to substitute in their own parameterization for melt fraction dependence.
-Second, other processes such as damage, fabric development, and impurities can affect the fluidity as well.
-For these reasons, the diagnostic model takes in the fluidity as an argument and users must calculate the fluidity field themselves, either using the default parameterization that icepack supplies or one of their own.
+Other processes such as damage, fabric development, and impurities can affect the fluidity as well.
+Moreover, there may be other volumetric heat sources that users wish to account for, such as cryo-hydrologic warming \citep{phillips2010cryo}.
+These considerations defy any attempt to have one function that calculates the volumetric heating rate from the other state variables.
+Instead, we opted for an interface where users calculate this rate themselves, with tutorials and examples that show how to do so for simple scenarios, leaving the freedom to alter the thermal feedbacks as they see fit.
 Our general design principle is that icepack will solve differential equations for the various prognostic fields but it's up to users to decide how these fields are coupled.
 
 We have not implemented a model for the surface or englacial transport of meltwater, although it would be possible to include this process.
@@ -552,6 +585,12 @@ They are intended more to capture some important features of the real physical s
 \section{Data assimilation}
 
 Icepack includes a set of routines for estimating the basal friction or rheology coefficients from observational data.
+Mathematically, this inverse problem amounts to finding a critical point of the functional
+\begin{equation}
+    L(u, \theta, \lambda) = J(u) + R(\theta) + \langle F(u, \theta), \lambda\rangle
+\end{equation}
+where $J$ is the misfit between the computed velocity $u$ and observations, $\theta$ is the field to be inferred and $R$ a regularization functional that measures the spatial variability of this field, $F$ is the diagnostic physics, and $\lambda$ a Lagrange multiplier to enforce the physics \citep{macayeal1992basal, joughin2004basal, larour2005rheology, shapero2016basal}.
+The optimal value $\theta$ gives the best fit to observations subject to the constraints of the physics and that it should not overfit to noise in the data.
 The class \texttt{InverseProblem} represents the specification of an inverse problem, which requires:
 \begin{itemize}
     \item the model object and the method that solves the diagnostic equation,
@@ -561,6 +600,7 @@ The class \texttt{InverseProblem} represents the specification of an inverse pro
     \item extra data passed to the diagnostic solver such as boundary conditions.
 \end{itemize}
 This class currently assumes that the observed state is always the ice velocity.
+The state to be estimated can be any single input field to the diagnostic model -- basal friction, rheology, or another field that the user has added by customizing the model.
 In principle the same design would suffice for more complicated inverse problems and this is an area of active development.
 
 The inverse problem class is flexible enough to account for users defining their own parameterization for the rheology or friction coefficient as described in \S\ref{sec:physics-substitution}.
@@ -975,7 +1015,7 @@ The velocity measurements themselves might have significant outliers, in which c
 For these reasons, some studies have explored alternative objective functionals \citep{morlighem2010spatial}.
 We have opted to use the regularized $L^1$-type error metric
 \begin{equation}
-    E(u - u^o) = \int_\Omega\left(\sqrt{\frac{|u - u^o|^2}{\sigma^2} + \gamma^2} - \gamma\right)dx.
+    J(u) = \int_\Omega\left(\sqrt{\frac{|u - u^o|^2}{\sigma^2} + \gamma^2} - \gamma\right)dx.
     \label{eq:l1-error-metric}
 \end{equation}
 This error metric approaches the usual weighted sum of squared errors as $\gamma \to \infty$, and approaches the sparsity-promoting $L^1$ error metric as $\gamma \to 0$.

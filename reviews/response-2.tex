@@ -184,6 +184,8 @@ The Firedrake developers are working on this feature right now as it's very much
 We are very much interested in, for example, using SIA in the interior of the ice sheet and SSA in the ice streams and margins, as this would give a much less computationally-intensive way to do some form of whole-ice sheet modeling than using, say, the first order model.
 \item \textcolor{blue}{Section 2.4: This section is very incomplete. You need to give the enthalpy equation and given the
 Glen's law expression as well, since it is mentioned.}
+
+We have added some text and equations describing the model we used, the boundary conditions, and the shear heating rate, the latter of which implicitly includes Glen's flow law.
 \item \textcolor{blue}{In my opinion, there is not enough discussion of the thickness equation (Section 2.1) and how it
 is discretized. In typical ice sheet models, this equation is used to change the ice extent - one
 meshes up a region of ``potential'' ice, and then uses the thickness to dynamically determine a mask
@@ -201,6 +203,10 @@ citing the work Perego et al. on optimization-based inversion, if what you are d
 https://doi.org/10.1002/2014JF003181. BTW, the basal friction has not been defined, yet it is
 discussed - it needs to be defined earlier, when talking about boundary conditions (which needs to
 be added).}
+
+We added a brief description of the mathematics of the inverse problem to be solved.
+We also added: ``The state to be estimated can be any single input field to the diagnostic model -- basal friction, rheology, or another field that the user has added by customizing the model.''
+
 \item \textcolor{blue}{Section 4.1: I find this section confusing. I assume you are talking about discretizing the thickness
 equation here - that should be made clear. I disagree with several statements in this section as
 well. ``The simplest explicit timestepping schemes are unstable with CG finite elements'' - if you are
@@ -231,9 +237,17 @@ I think you can use a lumped mass matrix as the $H_0$ in BFGS too, but I find it
 No change to the text.
 \item \textcolor{blue}{Section 4.4: Again, it is not clear to me what is your inverse problem. You need to state this explicitly
 so it is clear.}
-\item \textcolor{blue}{Section 4.5.1: you talk about problems defined on “extruded geometries” - do you ever use non-
+
+See correction to section 3.
+The point of the inverse solver class is that it is very general with respect to what field is being inferred and what diagnostic model is being used.
+Since the solver was designed to work for many different inverse problems
+\item \textcolor{blue}{Section 4.5.1: you talk about problems defined on ``extruded geometries'' - do you ever use non-
 extruded geometries? It has been shown in various references that there can be numerical problems
 for land-ice solvers that do not use extruded geometries, e.g. Tezaur et al.}
+
+We have restricted our implementation to use only extruded geometries.
+Having made this choice, we might not ever be able to solve really geometrically complex problems like what the Elmer/Ice crowd did with the drainage of the lake underneath T\^ete Rousse glacier.
+But the simplifications that this results in for the vast majority of glaciological applications are so advantageous that it's a sacrifice we're willing to accept.
 \item \textcolor{blue}{Section 4.5.2: I think this section needs to be made earlier, and other BCs need to be added to that
 discussion.}
 \item \textcolor{blue}{Section 4.6: The authors mention running their code on 1 core. Is the code parallel - can it be run
