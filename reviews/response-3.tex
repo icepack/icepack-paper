@@ -69,9 +69,23 @@
 
 \textcolor{blue}{13, AC:  Presumably all software packages can be effective in the hands of experts, and here it is suggested that Icepack stands-out as better for non-experts.  My question is whether it will be effective for non-experts interested in announced goals 1 and 4 (among those listed on lines 15--18).  This is hard to believe given how Icepack seems to be designed around, and the manuscript focused on, goals 2 and 3.  Consider the reader who wants to simulate glacier extent for some years into the future for a mountain glacier or Greenland, who can supply a simulated climate (atmosphere/ocean), a bed topography, and a current geometry in some data files.  Does this paper convince me that they need *less* expert knowledge to use Icepack for that purpose than other existing ice sheet models?  Not yet.  Of course a full usage answer occurs in online tutorials and examples, not just the manuscript.  Nonetheless the absence of attention to transport equation boundary conditions, and to how mass/energy surface inputs are handled, gives me the impression that such a reader is on a long co-development path with the Icepack authors, requiring the development of much expert knowledge before first useful results.  Said a different way, expert knowledge is required for any software that does not have an aggressive scheme for putting reasonable defaults into the hands of novices.  To paraphrase a recent Firedrake paper [Farrell et al 2020], it is a mechanism-vs-policy concern.  Icepack has a library of mechanisms, but an absence of apparent policy means expert knowledge is needed to recover usability for real-science applications.  I rolled my eyes at the implications of the sentence on line 13, and these concerns remained after reading the whole paper.}
 
+This depends on what kind of expertise you mean.
+We believe that more work can be done to relieve glaciologists \emph{who are not experts in scientific computing} from having to understand, e.g., the details of what preconditioners are used in solving linear systems, what globalization strategy is used in a Newton solver, etc.
+By way of an ``aggressive scheme for putting reasonable defaults into the hands of novices'', we describe this policy at the end of section 6, beginning in line 695.
+We do not claim to have reduced the need for expertise in glaciology itself, i.e. understanding mass and energy balance, etc.
+We also consider having some understanding of the different boundary conditions that might apply to the system to be part of this knowledge.
+The text has been expanded to describe these boundary conditions in more detail (see comments that follow).
+Granted, (1) there is more demonstration work that we need to do in order to cover use cases like modeling a small mountain glacier and (2) there are technical hurdles we still need to overcome to do a better job handling the margins.
+Very likely your recent work on variational inequalities will factor into improvement on the second front.
+Addressing these concerns within this manuscript would result in a dramatic increase in scope.
+
 \textcolor{blue}{21--39:  I also think Python+Firedrake+PETSc is the most promising environment to build a new ice flow simulation library/model.  I'm on board!}
 
 \textcolor{blue}{44--46, B:  Let me vote to *not* maintain the "diagnostic"/"prognostic" linguistic tribalism.  The world calls these equations "conservation of momentum" and "conservation of mass".  (Indeed one should remind the reader that the latter describes thickness evolution because of how glacier models normally parameterize fluid geometry.)  An "also known as the 'prognostic equation' [cite]" is appropriate, but another paper using this tribal language will cause yet more students to need to unlearn silly language in order to read the mainstream fluids and numerical PDE literature.}
+
+I agree with you that this isn't great terminology.
+But I didn't think it was a fight I could win so I went with the rest of the glaciological literature and used these names.
+By this point the nomenclature is used in so many places throughout the package that switching would be a breaking change for existing users.
 
 \textcolor{blue}{46--47:  Here!  Here!  It is a infinite-dimensional DAE!  Good.  Many readers will be unfamiliar with the concept; I cite [Ascher \& Petzold 1998] for that but there may be better references.}
 
