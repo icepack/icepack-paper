@@ -107,7 +107,13 @@ By now the nomenclature is used in so many places throughout icepack that switch
 
 \textcolor{blue}{46--47:  Here!  Here!  It is a infinite-dimensional DAE!  Good.  Many readers will be unfamiliar with the concept; I cite [Ascher \& Petzold 1998] for that but there may be better references.}
 
+Added a reference to Ascher and Petzold.
+
 \textcolor{blue}{56, equation (1) and nearby, AB:  Two concerns.  First, it is later acknowledged that this is not really an advection equation (lines 376--377), so one does not need to call it that here either.  The SIA is not some weird alternative universe of weak-willed modelers, it is what *all models should produce* in the large.  That model, the only clearly-understood coupled model, makes equation (1) a diffusion, as noted.  Surely calling this a "transport equation" or even "thickness transport equation" is adequate.  One then points-out that $q=hu$ is one way to parameterize flux, and that $u$ comes from a coupled equation \emph{driven by $\nabla s$} (even in the Stokes case).  It might be acknowledged that (1) does not have a PDE "type" in the classical sense.  (It is a DAE, after all.)  Second, equation (1) holds with what boundary conditions?  This manuscript maintains the tradition of pretending not to notice.  To quote [Schoof \& Hewitt 2013], "A sometimes weakly perceived point in glaciology is that the model above is in fact a free-boundary problem ...", and *this applies to (1) regardless of the stress balance model*.  Is this paper just going to pretend boundary conditions for the main, and first, equation don't exist?  (Or pretend that all glaciers end in cliffs of sufficient height so that the singular change of coordinates (16) is no problem?)  This manuscript could even cite existing wellposedness literature for (1), especially [Calvo et al 2003] and [Jouvet \& Bueler 2012], which confirm the meaningfulness of the free-boundary problem formulation and the resultant simultaneous Dirichlet (h=0) and Neumann (q=0) boundary conditions at grounded margins.  And then say what Icepack will when solving (1).}
+
+We removed the statement that this is an advection equation and added the following sentences: ``This problem has the apparent form of a conservative advection equation.
+The velocity $u$ is coupled to the thickness and surface slope, however, in such a way that the whole problem is not hyperbolic and in many cases does not have a PDE `type' in the usual sense.''
+
 
 \textcolor{blue}{68, B:  It is not clear why the conservation of momentum model for a slow fluid should ever be called a "momentum transport" model.  There is no d/dt for momentum!  Surely "conservation of momentum equation" or "stress balance equation" suffice.}
 
@@ -183,7 +189,6 @@ Done.
 
 \textcolor{blue}{234--235:  I have received the advice "write about what you have done, not what you haven't", and I think it applies here.  Using two layers in this way assumes one polythermal structure and will not allow transition to the other.  No need to consider or mention it.}
 
-I was anticipating criticism from Doug Brinkerhoff.
 These sentences have been removed.
 
 \textcolor{blue}{253--289:  This chunk of text is important, and it describes one of the best aspects of Icepack's use of Python.  I think it should be put at the start of subsection 2.3, which will give clarity that when equations (22) and (23) appear, they are primarily an example of submodel plug-ability.}
@@ -197,14 +202,16 @@ Done.
 \textcolor{blue}{300--301, C:  I seriously doubt that more than one user in 100 will want to substitute their own melt-fraction dependence, because no one has the data for it.  So: "likely" --> "possible".  (This is a clear case where good defaults are more important than modularity.)}
 
 Changed to ``Some users of this module may want to substitute in their own parameterization for melt fraction dependence.''
-I think the fact that melt fraction dependence is not constrained very well means users are \emph{more} likely to change this in their code than if we did have good data.
-After all, if the data were good then we could just use whatever parameterization the experimentalists told us to and no one would ever have to touch it.
 
 \textcolor{blue}{297--305, C:  This paragraph reads, to me, like an argument that expert knowledge *will* be required for the Icepack user.  ("users must calculate the fluidity field themselves")  That is, unless Icepack includes both defaults and higher-level simulation drivers which allow the novice user to never know about these possibilities.  More broadly, what does Icepack design offer, when it comes to avoiding explicit choices of all submodels, on the way to a first scientifically-useful model for the beginner?}
 
-I think this falls under the heading of expert knowledge of glaciology and not of numerics.
-To give an extreme example, early on in grad school I was making a simulation of several Greenland glaciers and my officemate gave me the helpful advice to increase the fluidity of ice that would have accumulated during the last glacial period because of the dustier atmosphere.
-To use your phrase from before, we provide policies about numerics and mechanisms for physics.
+What you're describing is knowledge of glaciology, not scientific computing.
+We have stated explicitly in the first sentence of section 6 that we aim to reduce the need for users to be experts in the latter but not the former.
+If we were to define how some fields are coupled, we would be faced with a difficult design choice of where this is or is not appropriate.
+Including the effect of temperature on rheology seems fairly obvious.
+Some modeling papers also account for much higher fluidity for ice that accumulated during the last glacial period because of the greater dust content.
+Should it also be the responsibility of the package to include this effect?
+We did not feel that, at this stage of the development, we could also implement high-level simulation drivers that hide these details while also satisfying our other design goals.
 
 \textcolor{blue}{318--320:  Mushy sentences.  Needed?}
 
@@ -212,6 +219,12 @@ We wanted to emphasize that this model is very ad hoc and that we're not passing
 These sentences have been removed.
 
 \textcolor{blue}{345, C:  The sentence "The key classes that users interact with are flow models and solvers" is right at the heart of my concern C.  Indeed, after developing PISM with much (developer group) concern about flow models and solvers, we spent the next 10 years talking to users about their data formats, parameter-study schema, and surface process models (supra, sub, and calving front).  Barely had time to work on flow models and solvers ... until I quit day-to-day PISM development.  The by-far largest population of scientists care about how flowing ice interacts with their climates.  They use ice flow models on the assumption that ice flow modelers know how to model ice flow!  This "key classes" sentence is not describing users, it is describing co-developers.}
+
+Again I think this seems to be a disagreement about what the software package should do and what the users should be responsible for.
+Icepack lacks any of the high-level simulation drivers that PISM has.
+Giving users a relatively lower level interface to the physics solvers was a concession to the fact that we can't predict what they will want to do with an ice flow model by way of coupling to climate, oceans, solid earth, etc.
+Obviously you and the developers of PISM have had far more experience.
+We may well have misjudged what glaciologists do and don't find difficult about modeling and what type of interface best serves the needs of the most people.
 
 \textcolor{blue}{368:  "Practicing ... may be unfamiliar with" is unnecessary.  Just say what you have to say.}
 
@@ -283,7 +296,12 @@ Fixed.
 
 \textcolor{blue}{724:  Having reviewed quite a few ice sheet modeling papers, every single one claimed something about its usability.  Less mush, more answers please.}
 
+Changed to ``Relatively few works in the computational science literature draw directly from relevant work in HCI when discussing usability; see for example Hannay et al. 2009, Harris et al. 2020.''
+
 \textcolor{blue}{725:  I'm on board with (2), and wish for more careful analysis of Icepack's contribution here, but "quantifying" in (1) is not what you are doing in this manuscript.  (Nor, probably, do you have the ability to do it.)}
+
+Changed from ``quantifying'' to ``evaluating''.
+We're making an unsubstantiated claim that usability is indeed a rate-limiting factor.
 
 \textcolor{blue}{732--740, AC:  If I saw "4. robust time-evolution and climate interaction tools", or similar, on this list then I would be more of a believer in Icepack's future.  Will you be able to break out of stress-balance-and-inverse-model-solver-playground mode, and start answering some of the science questions enumerated in the Introduction?}
 

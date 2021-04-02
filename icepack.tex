@@ -175,7 +175,7 @@ Finally, the inverse solver in icepack uses the Gauss-Newton method, which conve
 The two main components of a glacier flow model are a \emph{diagnostic} and a \emph{prognostic} equation.
 The diagnostic equation prescribes the ice velocity through a time-independent, nonlinear, elliptic partial differential equation (PDE).
 The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
-Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation.
+Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation; see \citet{ascher1998computer}.
 
 The rheology and friction coefficient are functions of other fields that have their own evolution equations.
 For example, the rheology is a function of temperature, englacial water content, and damage from crevassing.
@@ -228,11 +228,14 @@ See table \ref{tab:mathematical-symbols} for definitions of all mathematical sym
 \subsection{Prognostic model}
 
 The \emph{prognostic model} or \emph{mass transport equation} (the two terms are synonymous) describes how the ice thickness changes in time.
-The prognostic model is a conservative advection equation:
+The prognostic model is:
 \begin{equation}
     \frac{\partial h}{\partial t} + \nabla\cdot hu = \dot a_s - \dot a_b,
 \end{equation}
 where $\dot a_s$ and $\dot a_b$ are the surface and basal mass balance.
+This problem has the apparent form of a conservative advection equation.
+The velocity $u$ is coupled to the thickness and surface slope, however, in such a way that the whole problem is not hyperbolic and in many cases does not have a PDE ``type'' in the usual sense.
+
 Icepack represents the thickness using continuous, piecewise polynomial basis functions in each cell of the mesh.
 We have not yet implemented a formulation that works with discontinuous basis functions, but this extension is completely feasible within our framework.
 
@@ -1127,8 +1130,8 @@ The physics of how glaciers interact with their environment are not completely u
 Consequently, the ability to change components of the model is an essential feature for any tool aimed at researchers in this field.
 
 We have also paid special attention to how we can design this software package to be most usable for its intended audience.
-Usability is not often discussed in the literature on computational science.
-We believe that this is because of two difficulties: (1) quantifying the degree to which usability is a rate-limiting factor and (2) concretely assessing what features make software tools more or less usable.
+Relatively few works in the computational science literature draw directly from relevant work in HCI when discussing usability; see for example \citet{hannay2009scientists, harris2020array}.
+We believe that this is because of two difficulties: (1) evaluating the degree to which usability is a rate-limiting factor and (2) concretely assessing what features make software tools more or less usable.
 By contrast, measuring computational performance is much more feasible although still fraught with difficulties of its own.
 (This is not to say that performance optimization is easy by any means.)
 In working with several graduate students and postdoctoral researchers in glaciology, we have observed that usability is a substantial bottleneck for researchers at these career stages.
