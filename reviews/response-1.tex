@@ -131,6 +131,10 @@ stabilize even when using implicit Euler. Are you sure that implicit Euler
 is unconditionally stable even for non-linear advection like this?}
 
 See Donea and Huerta, \emph{Finite element methods for flow problems}, chapter 3, sections 4-6.
+This section was also written very early on but became out of date by the time we submitted the paper.
+Since then, we added an implicit version of the Lax-Wendroff scheme, which has better stability properties and higher order accuracy.
+The text has been amended to reflect this change.
+
 We did have similar experiences to what you describe when preparing the MISMIP+ test case for this paper.
 The melt phase produces very high ablation rates concentrated in a small region right near the grounded line.
 In our initial setup, the mesh we used didn't adequately resolve this feature.

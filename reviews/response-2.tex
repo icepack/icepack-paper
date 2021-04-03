@@ -162,6 +162,15 @@ We've added them to table 1.
 sprinkle in some boundary conditions here and there. I think the boundary conditions need to be
 given for each of the models at the time the models are presented - boundary conditions are needed
 to complete the definition of each models.}
+
+We added this statement to section 2.1: ``We implement two types of boundary conditions for the prognostic equation.
+Users can specify an inflow flux value and this value becomes a source of thickness at any point along the domain boundary where the ice velocity is pointing in to the domain.
+The flux at the inflow boundary can change in time.
+Second, we impose outflow boundary conditions on any part of the domain where the ice velocity is pointing outwards.
+Which segments of the boundary are inflow or outflow are diagnosed automatically by calculating the sign of the dot product between the velocity and the unit outward normal vector.''
+
+We also added an entirely new section which is now \S2.3 in the text just on the boundary conditions for the different diagnostic models.
+
 \item \textcolor{blue}{Certain terms in the equations I do not believe are defined anywhere, for instance, in equation (10),
 there is no expression given for the strains $\dot\epsilon(u)$.
 This is one of the things I cam across that need to
@@ -192,6 +201,16 @@ meshes up a region of ``potential'' ice, and then uses the thickness to dynamica
 for ice-covered regions. Do you do something like this in your model? It should be discussed for
 completeness. I think you maybe start to do this in Section 4.1, but it is very confusing and hard to
 make the connection.}
+
+We added this statement to section 2.1: ``Icepack represents the thickness using continuous, piecewise polynomial basis functions in each cell of the mesh.
+In the examples we use up to degree 2 and the unit tests use up to degree 4.
+We have not yet implemented a formulation that works with discontinuous basis functions, but this extension is completely feasible within our framework.''
+See also previous comment on boundary conditions for the thickness equation.
+We also added a longer description of our treatment of ice-free regions (which is very ad hoc for now) at the end of section 2.1.
+This is a weak point at present and we plan to improve this in future versions.
+
+
+
 \item \textcolor{blue}{What sort of meshes do you use in your model (in the horizontal dimension, for the hybrid one)?
 Structured/unstructured? Hex/tet (quad/tri)?}
 
@@ -220,6 +239,15 @@ I don't understand the comment about implicit Euler smoothing out sharp disconti
 explicit and implicit Euler have effectively the same diffusion and dispersion properties, so there
 should not really be a difference between the schemes. Did the authors verify their time-stepper on
 a manufactured problem to ensure that it was implemented correctly?}
+
+This was sloppily written.
+What we should have said was that SUPG confers some of the benefits of upwind finite difference stencils when using continuous Galerkin basis functions.
+I was basing the statement about stability on the expression for the numerical amplification factor for the $\theta$-scheme with piecewise linear finite elements from section 3.5.2 in Donea and Huerta, Finite Element Methods for Flow Problems.
+In any case, we've cut much of this section to focus more on the implementation in icepack rather than what other packages use.
+The text was also out of date; the actual default now is an implicit scheme with a Lax-Wendroff correction that gives higher order accuracy in time.
+Our statement that implicit Euler has predominantly diffusive errors was not to imply that explicit Euler doesn't share the same property.
+We were trying to draw a contrast between what types of errors are tolerable for the prognostic model as opposed to other problems like damage transport, which is described in the next paragraph in the text.
+
 \item \textcolor{blue}{Section 4.2: there is an approach discussed in Tezaur et al. (https://doi.org/10.5194/gmd-8-1197-2015)
 for dealing with bad initial conditions in a Newton solver that relies on homotopy continuation that
 would be worth citing. It is an alternate to the approach you describe that lets you get away with not
@@ -250,6 +278,11 @@ Having made this choice, we might not ever be able to solve really geometrically
 But the simplifications that this results in for the vast majority of glaciological applications are so advantageous that it's a sacrifice we're willing to accept.
 \item \textcolor{blue}{Section 4.5.2: I think this section needs to be made earlier, and other BCs need to be added to that
 discussion.}
+
+See response to previous comment and the additional section we added on boundary conditions.
+This section describes some extra care that we had to do in our implementation which was purely a consequence of our choice of basis functions and which does not appear in the idealized mathematical form of the model.
+In keeping with our overall goal of splitting the paper up into a section on what we're solving and a different section on how we're solving it, we've kept this section where it is.
+
 \item \textcolor{blue}{Section 4.6: The authors mention running their code on 1 core. Is the code parallel - can it be run
 on multiple cores? Are there any hope for performance portability of the code to take advantage of
 emerging HPC architectures, e.g., GPUs?}
@@ -288,12 +321,14 @@ A package that also made the choice to use action principles but which was built
 We are hampered by the fact UFL does not include support for hypergeometric functions.
 If we were instead writing everything from scratch in C++, we could call into Boost or GSL to evaluate hypergeometric functions.
 We believe that the benefits outweight the costs but this is a definite drawback of our approach.
+
 \item \textcolor{blue}{It's great that you have executable documentation in something easy-to-use such as Jupyter notebooks! (no need to address this comment)}
 \item \textcolor{blue}{p. 29: are you considering putting in the first-order Stokes/Blatter Pattyn model into your code
 framework?}
 
 The thing that we mistakenly called the ``hybrid'' model is really the first order / Blatter-Pattyn model.
 We have rewritten some of the text to try and make this clearer.
+
 \item \textcolor{blue}{The methods do not discuss their code development/testing stance on icepack. How do users con-
 tribute to the code - through pull requests? Is there regression/performance testing? Continuous
 integration testing? These are all really important, especially if you have non-experts contributing

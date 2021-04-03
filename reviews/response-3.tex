@@ -79,17 +79,14 @@
 This depends on what kind of expertise you mean.
 We believe that more work can be done to relieve glaciologists \emph{who are not experts in scientific computing} from having to understand, e.g., the details of what preconditioners are used in solving linear systems, what globalization strategy is used in a Newton solver, etc.
 By way of an ``aggressive scheme for putting reasonable defaults into the hands of novices'', we describe our policy at the end of section 6, beginning in line 695.
-Other software packages have (exactly as you say) all the mechanisms, but do not display a consistent policy.
+Other software packages have (exactly as you say) all the mechanisms, but the policies on display suggest the priority is for speed above all else.
 For example, several of the demonstration codes in Elmer default to choices of iterative solvers and preconditioners that work on the particular problem in the example but which are likely to require hand-tuning when generalized to real data.
 See for example \href{https://github.com/ElmerCSC/elmerfem/blob/aaa6c4a345c73ba248c475d27975c5e3a9fa7758/elmerice/examples/Inverse_Methods/MacAyeal_Stokes/SIF/OPTIM_CONT.sif#L161}{this line} from Elmer's demonstration of an inverse solver, which uses the GCR scheme and an ILU0 preconditioner to solve the momentum equation.
 A graduate student could easily try to take this code and use it on real data only to have convergence failures to diagnose.
 Other examples from Elmer do use direct solvers, for example their \href{https://github.com/ElmerCSC/elmerfem/blob/aaa6c4a345c73ba248c475d27975c5e3a9fa7758/elmerice/examples/Test_SSA/ismip_SSA_2D.sif#L105}{demonstration code} to run the ISMIP test case with the SSA model uses a direct solver from UMFPACK for the momentum equation.
-The mechanisms are there, but a consistent policy is not.
-Other packages show a similar pattern.
-For example, BISICLES has hand-tuned numbers of Picard iterations and multigrid smoothing iterations in their demonstration codes.
+Other packages show a similar pattern -- BISICLES has hand-tuned numbers of Picard iterations and multigrid smoothing iterations in their demonstration codes.
 A new user either must (1) know enough about numerical methods to diagnose the problem from bad input data, bad linear solver options, or bad nonlinear solver options, or (2) have a mentor who can.
-Either way this creates unnecessary friction for people who may be getting their first experience of modeling by using these examples.
-This is not to put down or undermine the incredible technical work that the developers of Elmer, BISICLES, and other packages have done over the years by any means; it's just a reflection of what knowledge the users need to have going in.
+Experienced users have all the tools at hand that they need to create large simulations that will run on supercomputers, but at the same time these choices can create friction for people who may be getting their first experience of modeling by using these examples.
 
 We do not claim to have reduced the need for expertise in glaciology itself, i.e. understanding mass and energy balance, etc.
 We also consider having some understanding of the different boundary conditions that might apply to the system to be part of this knowledge.
@@ -103,7 +100,6 @@ Very likely your recent work on variational inequalities will factor into improv
 
 I agree with you that this is not great terminology, but this isn't a fight we could win.
 Many other software packages for glacier flow modeling, including PISM and ISSM, use this terminology.
-By now the nomenclature is used in so many places throughout icepack that switching would be a breaking change for existing users.
 
 \textcolor{blue}{46--47:  Here!  Here!  It is a infinite-dimensional DAE!  Good.  Many readers will be unfamiliar with the concept; I cite [Ascher \& Petzold 1998] for that but there may be better references.}
 
@@ -111,9 +107,29 @@ Added a reference to Ascher and Petzold.
 
 \textcolor{blue}{56, equation (1) and nearby, AB:  Two concerns.  First, it is later acknowledged that this is not really an advection equation (lines 376--377), so one does not need to call it that here either.  The SIA is not some weird alternative universe of weak-willed modelers, it is what *all models should produce* in the large.  That model, the only clearly-understood coupled model, makes equation (1) a diffusion, as noted.  Surely calling this a "transport equation" or even "thickness transport equation" is adequate.  One then points-out that $q=hu$ is one way to parameterize flux, and that $u$ comes from a coupled equation \emph{driven by $\nabla s$} (even in the Stokes case).  It might be acknowledged that (1) does not have a PDE "type" in the classical sense.  (It is a DAE, after all.)  Second, equation (1) holds with what boundary conditions?  This manuscript maintains the tradition of pretending not to notice.  To quote [Schoof \& Hewitt 2013], "A sometimes weakly perceived point in glaciology is that the model above is in fact a free-boundary problem ...", and *this applies to (1) regardless of the stress balance model*.  Is this paper just going to pretend boundary conditions for the main, and first, equation don't exist?  (Or pretend that all glaciers end in cliffs of sufficient height so that the singular change of coordinates (16) is no problem?)  This manuscript could even cite existing wellposedness literature for (1), especially [Calvo et al 2003] and [Jouvet \& Bueler 2012], which confirm the meaningfulness of the free-boundary problem formulation and the resultant simultaneous Dirichlet (h=0) and Neumann (q=0) boundary conditions at grounded margins.  And then say what Icepack will when solving (1).}
 
-We removed the statement that this is an advection equation and added the following sentences: ``This problem has the apparent form of a conservative advection equation.
-The velocity $u$ is coupled to the thickness and surface slope, however, in such a way that the whole problem is not hyperbolic and in many cases does not have a PDE `type' in the usual sense.''
+We removed the statement that this is an advection equation and added the following sentences:
+``This problem has the apparent form of a conservative advection equation, but the velocity $u$ is coupled to the thickness and surface slope in such a way that the whole problem is not hyperbolic.
+For the specific case of the shallow ice approximation (see section \S2.2.1), the coupled system is parabolic.
+In all other cases, the problem does not have a PDE `type' in the usual sense because the velocity is found through solving an elliptic PDE where the thickness and surface slope are coefficients.''
 
+Our discussion of boundary conditions was mostly lacking.
+We added the following:
+
+``We implement two types of boundary conditions for the prognostic equation.
+Users can specify an inflow flux value and this value becomes a source of thickness at any point along the domain boundary where the ice velocity is pointing in to the domain.
+The flux at the inflow boundary can change in time.
+Second, we impose outflow boundary conditions on any part of the domain where the ice velocity is pointing outwards.
+Which segments of the boundary are inflow or outflow are diagnosed automatically by calculating the sign of the dot product between the velocity and the unit outward normal vector.
+
+The mass transport equation for ice thickness is a free boundary problem, where the free boundary is the contour between ice-covered and ice-free regions (Schoof and Hewitt 2013).
+A naively-implemented prognostic solver could erroneously compute negative thickness values in subsequent timesteps when there is ablation in ice-free regions.
+A common and ad-hoc approach to work around this issue is to truncate the thickness at zero at every timestep.
+The principled approach is to instead treat the free boundary problem directly as a variational inequality (Jouvet and Bueler 2012).
+Icepack currently lacks a principled scheme for tracking this free boundary and we instead rely on truncation.
+Treating this problem as a variational inequality in icepack will be the subject of future development.
+PETSc includes scalable solvers for variational inequalities (Bueler 2020) that are also available through Firedrake.''
+
+We also added a new section which is now section \S2.3 in the text on the boundary conditions for the diagnostic models.
 
 \textcolor{blue}{68, B:  It is not clear why the conservation of momentum model for a slow fluid should ever be called a "momentum transport" model.  There is no d/dt for momentum!  Surely "conservation of momentum equation" or "stress balance equation" suffice.}
 
@@ -149,6 +165,9 @@ Apologies, the text has been corrected.
 
 \textcolor{blue}{137--140:  There is a double negative in equations (12) and (14) which is not used in (6) and (8), respectively.  Does this reflect anything important?}
 
+These modules were developed by different authors.
+We will get rid of the discrepancy in a future version.
+
 \textcolor{blue}{148--149:  It is of course true that for general boundary conditions the "shallow stream equations do not have a simple analytical solution."  What is probably meant here, however, is that there is not a well-known, exactly-solvable, basal-friction-included boundary value problem suitable for testing.  But that's not true, and indeed the *very first theoretical paper in glaciology* provides one, namely [Böðvarsson 1955]!  See the full story, and a derived marine flow-line exact solution suitable for testing, in [Bueler 2014].  The method of manufactured solutions applies, of course, but at loss of clarity on the meaning and magnitude of the resulting numerical errors, and with great danger of testing the wrong parts of a (nonlinear) system phase space, and with loss of the history of mathematical glaciology.}
 
 Added a reference to Bueler 2014 and Böðvarsson 1955.
@@ -166,6 +185,13 @@ Done.
 That was a typo, fixed.
 
 \textcolor{blue}{175, equation (16), A:  From here forward, in the manuscript, the lateral boundary condition for equation (1) is even less clear because this change of variables takes the lateral free margin and blows it up.  (In the grounded ice case, and where "blow up" is used in the mathematical sense.)  With what consequences for simulating moving margins?  Section 4.1 does not address this (i.e. how the boundary condition for the transport equation behaves as h->0; a boundary condition is not mentioned).  I believe, on the other hand, that the SIA grounded-margin example in section 5.2 does not use (16), which as described applies only applying to "the hybrid flow model", but section 5.2 does not mention the margin anyway.  I am concerned that positive consequences of using (16) are emphasized while negative consequences are not mentioned, and that Icepack has no path around these negative consequences.}
+
+Section 2.3 in the text describes the lateral boundary conditions for the diagnostic models and an admission that we assume the entire spatial domain is ice-covered.
+It's possible that I've painted us into a corner with this choice.
+In the $h \to 0$ limit, the only singularity in the equations is in the vertical shear stress, which -- including a factor of $h$ from the determinant of the coordinate transformation -- scales like $h^{-1}$.
+A dirty hack would be to replace this term with \texttt{1 / max\_value(h\_min, h)}, effectively clamping it at the reciprocal of this minimum thickness.
+This would still permit ice-free areas at the risk of underestimating vertical shear stresses in areas where the ice is thinner than whatever threshold value was used.
+Alternatively, we may have no choice but to switch to a $z$-coordinate model in future versions.
 
 \textcolor{blue}{215:  For clarity to readers not already thinking about Firedrake's extruded meshes, I suggest adding a parenthetical: "linear or quadratic elements on (horizontal) triangles".}
 
@@ -232,9 +258,12 @@ Changed to ``Some glaciologists may be unfamiliar with the Courant-Friedrichs-Le
 
 \textcolor{blue}{362--381, A:  Three concerns about section 4.1.  First, as already noted, transport equation (1) has boundary values and they are again silent here.  Second, there are multiple transport problems in glacier modeling: equation (1), the advection-dominated enthalpy equation, the ice shelf damage transport equation, the age equation, ... etc.  Is this paragraph covering them all, or just equation (1)?}
 
+See response to previous comment on boundary conditions.
+We cut some of the text in this section in response to comments from reviewer \#2 and clarified that we were referring to the mass transport equation.
+
 \textcolor{blue}{368--373, AC:  The third concern, regarding this paragraph, is that Icepack apparently has not yet set-up effective adaptive time-stepping.  (I have not gotten a runtime error from a modern explicit ODE solver for a long time!  Have you?  Some runs are slow cause they are stiff, indeed.)  This should be addressed/acknowledged.  In particular, assuming a perfectly-implemented \emph{implicit} solver, how does $\Delta t$ scale with $\Delta x$?  If the problem were really advective, so that the goal is to model influences as they travel at the characteristic speed, then the answer would be $\Delta t = O(\Delta x)$ for accuracy, even with your implicit scheme.  (Better than $O(\Delta x^2)$, yes indeed ... but then explicit steppers would be fine ... but (1) is not an advection ... we must think more.)  Though the problem is actually some diffusive/advective mix, some defined scaling of $\Delta t$ with $\Delta x$ is still needed for accuracy.  This can come from an adaptive time-stepper, or be designed from scratch.  Then there is the matter of the user's data time scale for surface mass balance, etc., which implies "events" in the adaptive time-stepper (when data is read).  In fact, the actual questions a glacier model must answer, regarding time steps, are these:  How does time-stepping change under spatial grid refinement?  Does it converge in space-time refinement?  Is it robust over realistic geometries and inputs?  What is the user interface?  This paragraph convinces me that Icepack is not yet there, which should not be completely buried.}
 
-Text has been slightly reorganized, and we added ``Icepack currently lacks an adaptive timestepping scheme.
+Text has been reorganized, and we added ``Icepack currently lacks an adaptive timestepping scheme.
 Unconditionally stable schemes allow taking long timesteps, but taking very long timesteps will give inaccurate solutions.
 At present, users are still responsible for checking the accuracy of their results, for example by running at more than one resolution.
 Adaptive timestepping will be added in a future release.''
@@ -248,6 +277,10 @@ Fixed.
 
 \textcolor{blue}{365, A:  The "In the interest of simplicity" phrase here tells me the authors simply have not thought-through the time-evolution of glacier geometry and the needed boundary conditions.  (You have a scheme for unconditional-stably generating glacier surfaces which conserves mass in the presence of ablation?  Then don't hide it!)  Please take the problem seriously:  Address how you maintain reasonable margin shape and positive thickness in an implicit scheme.  It is o.k. to admit that time steps cannot be arbitrarily long in your scheme, to get convergence; the "conditional/unconditional stable" language is an artifact of linear PDE theory, and your problem, taken seriously, is super-duper-nonlinear.}
 
+See response to previous comment.
+We've changed the text to say that the scheme is unconditionally stable for the advection equation with a note that the coupled system is not linear nor is it hyperbolic.
+We also changed a later sentence to: ``Implicit schemes allow taking longer timesteps than explicit ones, but taking very long timesteps will give inaccurate solutions and, in the presence of ablation, may yield negative thickness values.''
+
 \textcolor{blue}{376--377, B:  This sentence is a very good argument for *not* calling (1) an advection equation.}
 
 \textcolor{blue}{383--444, A:  Sections 4.2 and 4.3 convince me that when the Icepack team takes on aspects of model design they care about then it comes out very well!  These sections suggest the momentum balance ("diagnostic" ... grrr) solver has great defaults.  Likewise with sections 4.4 and 4.5.  (Now for serious attention to time-stepping, mass conservation, and the user's surface mass- and energy-flux data, and clarity on Icepack's TODO list.)}
@@ -260,7 +293,12 @@ Added a citation to Pratt et al 1998 and Habermann et al 2012.
 
 \textcolor{blue}{469, A:  Here "terminus boundary condition" refers to the momentum balance equation.  There is, as far as I can tell, no regard for the "terminus boundary condition" needed when solving equation (1), i.e. the mass conservation terminus boundary condition, even in the case of a cliff, much less a grounded margin.}
 
+See response to previous comments.
+
 \textcolor{blue}{474--487:  Extruded meshes.  On board with Firedrake.  But if the model claims to have a solution of (1) then there would be some mechanism for addressing regions which become ice-free within a time step?  No mention thereof.}
+
+You can use extruded meshes of variable thickness and that thickness can become 0.
+So the choice of extruded meshes does not force one to use terrain-following coordinates as we did, whether or not that was a good idea.
 
 \textcolor{blue}{493--515, A:  Section 4.5 describes a nice solution to a real problem.  In fact, can one consider this kind of fit to the glacier profile at a grounded margin?  Not obvious how to proceed, I agree, but note that the thickness field h of a glacier has the similar continuous-but-non-differentiable character as the pressure on the ocean calving front.}
 
@@ -272,7 +310,14 @@ Added a citation to Pratt et al 1998 and Habermann et al 2012.
 
 \textcolor{blue}{588--597, A:  This example would be more impressive with hybrid physics, right?, but Icepack is not there yet.  (Or else it would have been applied here.)  Readers of GMD should be taken to be serious people.  Tell them the score, and I don't mean relative to what other models are capable of.  What needs to improve?}
 
+See response to previous comments.
+The point of the exercise was to reproduce at least some of the results from a prior paper that used the shallow ice model exclusively.
+
 \textcolor{blue}{598:  Regarding "computationally cheap enough ... in a matter of minutes on a desktop":  I suppose the excuse for this sentence is that other people get away with writing such stuff?  The question is how run time scales with mesh resolution.  The reader can handle a plot, if you want to generate one.}
+
+We avoided discussing performance or scalability considerations in this paper.
+See our responses to reviewer \#2.
+These will be the subject of future work.
 
 \textcolor{blue}{604--647:  Nice examples!  Ice shelf physics is a scope where Icepack is a convincing choice for a research project.}
 
@@ -284,11 +329,20 @@ This sentence has been removed.
 
 \textcolor{blue}{677--678, C:  There is a *big* gap between "user interface in an interpreted language" and a "program that can only run in batch mode".  C-based PETSc programs like the PISM ice sheet model, and many other command-line programs, live in the interior of this gap.  For example, please consider these three HCI principles as they apply to command-line git.  It is neither "a user interface in an interpreted program" nor a "batch mode" only thing.  (Most command-line tools are not!)  Git has a steep learning curve, because it is a DAG modeling language, but such command-line design can hit your principles too.  Indeed, a good antidote to your false dichotomy is [Brown et al 2014], and addressing UI points made there would increase the credibility of section 6.  (You'll see that Icepack is definitely a Brown-approved design library-wise, but doing science is not equal to designing a library API either.)  Ultimately any science application of Icepack will be a map from inputs (data) to outputs (simulations or inversions), and the usability of that map (e.g. in ensemble simulations) is different from the develop-ability of it in an interactive environment.  Python is a great environment for experimentation, and for ice sheet modeling, and progressive evaluation is a desirable principle, but an interactive Python session is not the only alternative to 1990s climate-model design.  Presumably Icepack usage is intended to progress from all-interactive mode to parallel production/ensemble runs in batch systems anyway?  Address that?}
 
+We added the statement: ``Simulations that have been debugged can then easily be transformed into a single Python script, for example using the tool \texttt{nbconvert}, for production runs and parallel execution.
+In other words, while there is an interactive interface, there is also a faster batch mode interface as well.''
+
 \textcolor{blue}{681--683, C:  Regarding "The API ... one step at a time":  There is a *huge* amount of expert knowledge required to do science with an "ice sheet model" which does not have a policy for doing things "one step at a time".  Imagine a paper that proposed a new-and-better WRF model but said something like this about the demands on the user!}
 
 \textcolor{blue}{682--683, C:  Also, this "user" is a co-developer.}
 
+Several authors have noted the necessity of providing a path for users to become developers for the long-term health of an open-source software project.
+See for example Turk (2013), Scaling a code in the human dimension or Bangerth and Heister (2013), What makes computational open source software libraries successful?
+
 \textcolor{blue}{693--713, C:  This basic point about abstraction gradient is good.  But solver/discretization components/choices is not the only such gradient.  From talking to a lot of novice glacier modelers, I assert the key abstraction gradient, which an ice sheet model must finesse, regards ice flow physics.  (What aspects of the full, coupled, nonlinear dynamics are the next ones that the user's constructed Icepack model should/can handle for the science goal?  How to build-in that physics without unnecessary parameters?  How to generate intermediate results which reveal which processes are missing, re the science goal?)  Thinking on this stuff is where Icepack developers could make their next real progress.  That means de-emphasizing solver components/discretizations in the user's view, primarily by setting aggressive defaults, even as the developers must get solvers right (which is the strength of Icepack).}
+
+It's possible that icepack will evolve to have a more end-to-end simulation driver as the main interface.
+No change to the text.
 
 \textcolor{blue}{721:  "phyics"}
 
@@ -300,12 +354,16 @@ Changed to ``Relatively few works in the computational science literature draw d
 
 \textcolor{blue}{725:  I'm on board with (2), and wish for more careful analysis of Icepack's contribution here, but "quantifying" in (1) is not what you are doing in this manuscript.  (Nor, probably, do you have the ability to do it.)}
 
-Changed from ``quantifying'' to ``evaluating''.
+Expanded to: ``We believe that this is because of two difficulties.
+First, the degree to which usability is a rate-limiting factor for scientists is hard to quantify and likely differs widely across disciplines.
+Second, concretely assessing what features make software tools more or less usable is highly subjective.''
 We're making an unsubstantiated claim that usability is indeed a rate-limiting factor.
+We could be wrong about this.
+Even if we're right, the steps that we took to address this problem could have been misguided.
 
 \textcolor{blue}{732--740, AC:  If I saw "4. robust time-evolution and climate interaction tools", or similar, on this list then I would be more of a believer in Icepack's future.  Will you be able to break out of stress-balance-and-inverse-model-solver-playground mode, and start answering some of the science questions enumerated in the Introduction?}
 
-
+We have changed the list to include ``improved physics formulations and solvers that work in ice-free areas''.
 
 \section*{References}
 
