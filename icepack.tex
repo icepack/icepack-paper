@@ -476,6 +476,31 @@ In the tutorial notebooks for icepack, we use up to degrees 2 and 4, but the tes
 The shear flow basis function was chosen to be exact assuming the SIA balance with cold ice, together with a heuristic approximation for polythermal ice.
 By contrast, our approach allows for an arbitrary number of shear modes.
 
+\textbf{Action functional.}
+We can now describe all of the terms in the action functional for this model:
+\begin{align}
+    \text{viscosity} & = \frac{n}{n + 1}\int_\Omega\int_0^1hA^{-\frac{1}{n}}\sqrt{|\dot\varepsilon(u)|^2 + h^{-2}|\partial_\zeta u|^2}^{\frac{1}{n} + 1}\,d\zeta\,dx \\
+    \text{friction} & = \frac{m}{m + 1}\int_\Omega C|u(\zeta = 0)|^{\frac{1}{m} + 1}dx \\
+    \text{gravity} & = -\int_\Omega\int_0^1\rho_Igh\nabla s\cdot u\,d\zeta\,dx \\
+    \text{terminus} & = \int_\Gamma\int_0^1(p_I - p_W)u\cdot\nu\;d\zeta\,d\gamma
+\end{align}
+where $p_I$ is the ice overburden pressure and $p_W$ is the water pressure (if any) at the calving terminus from the ocean or a pro-glacial lake.
+The full action functional is exactly analogous to that of the shallow stream model:
+\begin{equation}
+    J = \text{viscosity} + \text{friction} - \text{gravity} - \text{terminus}
+\end{equation}
+Again, we note that the expression for horizontal the strain rate in terrain-following coordinates comes from equation \eqref{eq:geometric-correction}, which includes the additional geometric correction factor.
+
+In terrain-following coordinates, the ice overburden pressure at relative depth $\zeta$ is $p_I = \rho_Igh(1 - \zeta)$.
+The water pressure is zero above the waterline and increases linearly below it.
+Letting $\zeta_{\text{sl}}$ denote the relative depth to the waterline, the water pressure is
+\begin{equation}
+    p_W = \rho_Wgh(\zeta_{\text{sl}} - \zeta)_+
+\end{equation}
+where $w_+$ denotes the positive part of a real number.
+This quantity is continuous but only piecewise linear.
+Integrating it correctly requires more work above and beyond the usual symbolic approach; see section \S\ref{subsubsec:ocean-bc} for details.
+
 \subsection{Boundary conditions}
 
 The shallow shelf, shallow stream, and hybrid models require boundary conditions to be well-posed.

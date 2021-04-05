@@ -124,7 +124,8 @@ Firedrake has been shown to scale up to large problems on thousands of processor
 It is possible to ruin the performance of the application by accidentally hard-coding a floating point value into a symbolic expression of a PDE and then changing that value in a loop.
 For example you could easily make this mistake if you were doing adaptive timestepping on an evolutionary problem discretized via the method of lines.
 The remedy is to wrap this value in a \texttt{firedrake.Constant} object.
-But this kind of performance regression is easily caught using \texttt{htop} and are more a result of programmer error.
+This kind of performance regression is easily caught using \texttt{htop}.
+While this is more a result of programmer error, it's an easy mistake to make and the Firedrake team are working on ways to diagnose it and issue appropriate warnings.
 
 For the problems that we have used icepack for so far, we have focused more on individual glaciers or catchments, and thus performance has been a secondary concern.
 We aim to move towards larger continental-scale problems in the future.
@@ -143,7 +144,7 @@ The fundamental physics are the first-order model obtained by asymptotic expansi
 What I had imagined is that using only vertical basis functions up to degree 2 essentially defines its own semi-discrete physics model, similar to two- or three-layer ocean models.
 You can view these as very coarse discretizations of the primitive equations, or you can view them as simplified models in their own right.
 But I made this naming choice before there were many other collaborators on the project.
-The ensuing confusion has shown that this was a bad choice of terminology that we'll change in a future version.
+The ensuing confusion has shown that this was a bad choice of terminology and we intend to change it in a future version.
 This model can be used for both regions at continental scales -- it can capture both plug and shear flow.
 
 \item \textcolor{blue}{Section 2.2.1: in my opinion, the authors do not provide sufficient justification for the penalty term,
@@ -151,6 +152,11 @@ equation (7). They describe this as something that is added to smooth over artif
 needed based on the discretization, which there is little discussion of. The authors should state what
 order finite elements they are using - I presume they are linear, and that this is why the stabilization
 is needed? Why is stabilization needed only for the SIA? I think these things should be made clear.}
+
+See comments by reviewer \#3.
+The technical answer is that this makes the solution live in the Sobolev space $H^1(\Omega)$.
+A more heuristic answer is that the shallow ice approximation is usually assumed to hold only over distances greater than a few ice thicknesses.
+The penalty term is meant to filter out variability at length scales where the model doesn't even apply.
 \item \textcolor{blue}{Section 2.2.2: there is some imprecision here in equation (13) - you have not defined anywhere that $\Gamma$
 is the boundary, and which boundary you are referring to. One can figure it out, but it is not precise.
 $\Omega$ is not defined either though one will assume invariably that this is an open bounded domain in 2D
@@ -184,6 +190,9 @@ Added the following text: ``Going up to a degree-4 model is sufficient to captur
 In the tutorial notebooks for icepack, we use up to degrees 2 and 4, but the test suite checks up to degree 8.''
 \item \textcolor{blue}{Section 2.2.3: this might be a naive question, but does Glen's flow law come into the hybrid model?
 I was expecting to see it there, but maybe I'm missing something.}
+
+This was a bad oversight on our part -- the hybrid model does use Glen's flow law and we've added more detail at the end of this section describing the terms in the action functional (equations 22 through 26 in the revised text).
+The main difference is the term for viscous power dissipation.
 \item \textcolor{blue}{P. 10: the discussion here about substituting model components suggests it may be possible to use
 different models in different regions and couple them (a la the ISCAL method). Is this possible, or
 something that the authors are thinking to add to their model/code?}
