@@ -94,12 +94,17 @@ The text has been expanded to describe these boundary conditions in more detail 
 Granted, (1) there is more demonstration work that we need to do in order to cover use cases like modeling a small mountain glacier and (2) there are technical hurdles we still need to overcome to do a better job handling the margins.
 Very likely your recent work on variational inequalities will factor into improvement on the second front.
 
+We have altered the text to state more clearly that our goal is to help users who are not experts in scientific computing.
+We also added the following sentence to the conclusion: ``Exactly how to apply principles from HCI to maximize usability is, nonetheless, not an exact science.
+Our implementation may have failed to meet this goal and changes in future versions will be guided by what users find most difficult.''
+
 \textcolor{blue}{21--39:  I also think Python+Firedrake+PETSc is the most promising environment to build a new ice flow simulation library/model.  I'm on board!}
 
 \textcolor{blue}{44--46, B:  Let me vote to *not* maintain the "diagnostic"/"prognostic" linguistic tribalism.  The world calls these equations "conservation of momentum" and "conservation of mass".  (Indeed one should remind the reader that the latter describes thickness evolution because of how glacier models normally parameterize fluid geometry.)  An "also known as the 'prognostic equation' [cite]" is appropriate, but another paper using this tribal language will cause yet more students to need to unlearn silly language in order to read the mainstream fluids and numerical PDE literature.}
 
 I agree with you that this is not great terminology, but this isn't a fight we could win.
 Many other software packages for glacier flow modeling, including PISM and ISSM, use this terminology.
+No change to the text.
 
 \textcolor{blue}{46--47:  Here!  Here!  It is a infinite-dimensional DAE!  Good.  Many readers will be unfamiliar with the concept; I cite [Ascher \& Petzold 1998] for that but there may be better references.}
 
@@ -170,7 +175,7 @@ We will get rid of the discrepancy in a future version.
 
 \textcolor{blue}{148--149:  It is of course true that for general boundary conditions the "shallow stream equations do not have a simple analytical solution."  What is probably meant here, however, is that there is not a well-known, exactly-solvable, basal-friction-included boundary value problem suitable for testing.  But that's not true, and indeed the *very first theoretical paper in glaciology* provides one, namely [Böðvarsson 1955]!  See the full story, and a derived marine flow-line exact solution suitable for testing, in [Bueler 2014].  The method of manufactured solutions applies, of course, but at loss of clarity on the meaning and magnitude of the resulting numerical errors, and with great danger of testing the wrong parts of a (nonlinear) system phase space, and with loss of the history of mathematical glaciology.}
 
-Added a reference to Bueler 2014 and Böðvarsson 1955.
+Added a reference to Bueler 2014 and B\"o\dh varsson 1955.
 You make a great point about testing the wrong parts of a nonlinear phase space and this was actually a bit of a struggle when creating the tests for this solver.
 You could put in some thickness and velocity fields and a PDE and SymPy will spit out a manufactured friction, but there's no guarantee that the result will be physically reasonable.
 I had to manually adjust the input parameters so that the basal shear stress values would come out to something sensible.
@@ -238,6 +243,9 @@ Including the effect of temperature on rheology seems fairly obvious.
 Some modeling papers also account for much higher fluidity for ice that accumulated during the last glacial period because of the greater dust content.
 Should it also be the responsibility of the package to include this effect?
 We did not feel that, at this stage of the development, we could also implement high-level simulation drivers that hide these details while also satisfying our other design goals.
+See also response to the first comment and the text added to the conclusion.
+We believe that our design choices will ultimately enhance usability for the intended audience and we did our best by applying principles from HCI.
+But we may well have missed the mark and the interface may change to respond to evolving understanding of our target audience's needs.
 
 \textcolor{blue}{318--320:  Mushy sentences.  Needed?}
 
@@ -251,6 +259,7 @@ Icepack lacks any of the high-level simulation drivers that PISM has.
 Giving users a relatively lower level interface to the physics solvers was a concession to the fact that we can't predict what they will want to do with an ice flow model by way of coupling to climate, oceans, solid earth, etc.
 Obviously you and the developers of PISM have had far more experience.
 We may well have misjudged what glaciologists do and don't find difficult about modeling and what type of interface best serves the needs of the most people.
+See response to first comment.
 
 \textcolor{blue}{368:  "Practicing ... may be unfamiliar with" is unnecessary.  Just say what you have to say.}
 
@@ -299,8 +308,12 @@ See response to previous comments.
 
 You can use extruded meshes of variable thickness and that thickness can become 0.
 So the choice of extruded meshes does not force one to use terrain-following coordinates as we did, whether or not that was a good idea.
+No change to the text.
 
 \textcolor{blue}{493--515, A:  Section 4.5 describes a nice solution to a real problem.  In fact, can one consider this kind of fit to the glacier profile at a grounded margin?  Not obvious how to proceed, I agree, but note that the thickness field h of a glacier has the similar continuous-but-non-differentiable character as the pressure on the ocean calving front.}
+
+The technique might be applicable in other areas but we haven't had the chance to try it yet.
+No change to the text.
 
 \textcolor{blue}{517--522:  Rich problem-aware preconditioners and solvers.  On board with Firedrake.}
 
