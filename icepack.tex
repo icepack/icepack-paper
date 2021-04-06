@@ -177,10 +177,10 @@ The diagnostic equation prescribes the ice velocity through a time-independent, 
 The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
 Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation; see \citet{ascher1998computer}.
 
-Other fields with their own evolution equations can be a part of the problem as well as thickness and velocity.
-The rheology and friction are the main coefficients in the diagnostic equation.
+The evolution equations for ice thickness and velocity are necessary for any simulation, both other fields with their own dynamics can be a part of the problem as well.
+For example, the rheology and friction are the main coefficients in the diagnostic equation.
 These coefficients are functions of other fields that have their own evolution equations.
-For example, the rheology is a function of temperature, englacial water content, and damage from crevassing.
+The rheology is a function of temperature, englacial water content, and damage from crevassing.
 Likewise, the friction coefficient can be described in terms of the subglacial water pressure and a roughness factor for the underlying bedrock \citep{cuffey2010physics}.
 The diagnostic and prognostic equations can then be supplemented with evolution equations for these fields, for example the heat equation for temperature, or a hydrology model for subglacial water pressure.
 
