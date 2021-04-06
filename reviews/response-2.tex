@@ -55,7 +55,7 @@ Language (UFL) and provides a high-level symbolic description of the problem to 
 physics and/or equations. The intended user base of icepack is the glaciological community, in particular,
 glaciologists who may not have an extensive background/training in computational science. The idea is to
 provide a code that would be easy to use/develop by this class of prospective users. Following a description
-of the code, some numerical examples are presented to demonstrate the method’s capabilities and accuracy.
+of the code, some numerical examples are presented to demonstrate the method's capabilities and accuracy.
 The manuscript in question is well-written and interesting to read. Addressing usability is noteworthy
 and something that not enough authors in glaciology/climate science address. I personally have some
 qualms with some of the philosophy described by the authors, namely I worry about folks who are not
@@ -66,11 +66,11 @@ authors are correct that some solver options are for optimizing performance, whi
 the code/model running; but there are also solver/algorithm choices that depend very much on the physics
 (e.g., CG is only valid for symmetric problems) - is icepack designed so as to prevent the naive user from
 inadvertently using the incorrect default setting for their problem? I will assume it is to the extent it can
-be, and that the authors’ argument is that the default hidden settings are likely to do less damage than
+be, and that the authors' argument is that the default hidden settings are likely to do less damage than
 some arbitrary settings a user might put in his/her input file without knowing what they are doing. Also,
 I realize that the reality is that many glaciologists do not have strong ties to computational scientists, and
 still wish to make progress in numerical modeling of land-ice; therefore, I will not focus too much on much
-“philosophical” perspective described above.
+``philosophical'' perspective described above.
 Another qualm I have about the paper has to do with performance - I am skeptical whether icepack
 can really be performant if one tries to run it on continental scale problems, and it is not clear to me if
 the code is even parallel. I think the intention may be to use icepack as more of a sandbox for prototyping
@@ -92,8 +92,8 @@ of the residual within a C++ code and AD will handle the rest, making it very ea
 physics. An example is the Albany/Land Ice model (previously known as Albany/FELIX) of Tezaur
 et al. (https://doi.org/10.5194/gmd-8-1197-2015). I think it would be worth mentioning that
 there have been efforts like Albany/Land Ice out there to make C++-based codes more accessible to
-users of varied backgrounds. I agree that even an “easy-to-use” C++ code will be more difficult and
-more intimidating than a Python code, so I am not trying to minimize the authors’ efforts at all.}
+users of varied backgrounds. I agree that even an ``easy-to-use'' C++ code will be more difficult and
+more intimidating than a Python code, so I am not trying to minimize the authors' efforts at all.}
 
 I hope this paragraph made the point more that we had specific goals that could better be achieved in Python and not as some blanket condemnation of C++ -- I don't like being dogmatic about language choice.
 I've added a citation to Tezaur et al. and to another paper from the ISSM group about AD.
@@ -105,10 +105,12 @@ Now of course you pay for this in that all input validation is done at runtime r
 \item \textcolor{blue}{Can the authors comment on the overhead of the symbolic descriptions/manipulations done by their
 framework? This sounds potentially like it would be very expensive. How does the cost compare to
 automatic differentiation, for example? A broader question is: is computational performance/cost a
-concern for users of icepack, or is it intended to be a “sandbox” in which performance is secondary
-to being able to code up something “quick-and-dirty” for initial prototyping?}
+concern for users of icepack, or is it intended to be a ``sandbox'' in which performance is secondary
+to being able to code up something ``quick-and-dirty'' for initial prototyping?}
 
 See Rathgeber et al. 2016 for more information about the architecture of Firedrake and for performance benchmarks.
+We are constrained only by what Firedrake can do, so we refer to this paper for performance with no change to the text.
+
 Loosely speaking, the path through the toolchain goes like this.
 A user creates a symbolic description of the weak form of the PDE they want to solve.
 Firedrake then computes a hash of this expression and looks to see if it has encountered this problem before.
@@ -141,6 +143,7 @@ Does the hybrid model described in the paper have the same applicability as say 
 Stokes model? Can it be used for both Greenland and Antarctica at continental scales?}
 
 The fundamental physics are the first-order model obtained by asymptotic expansion of the Stokes equations in the aspect ratio, also known as the Blatter-Pattyn equations.
+We have amended the text to make this clear.
 What I had imagined is that using only vertical basis functions up to degree 2 essentially defines its own semi-discrete physics model, similar to two- or three-layer ocean models.
 You can view these as very coarse discretizations of the primitive equations, or you can view them as simplified models in their own right.
 But I made this naming choice before there were many other collaborators on the project.
@@ -157,6 +160,8 @@ See comments by reviewer \#3.
 The technical answer is that this makes the solution live in the Sobolev space $H^1(\Omega)$.
 A more heuristic answer is that the shallow ice approximation is usually assumed to hold only over distances greater than a few ice thicknesses.
 The penalty term is meant to filter out variability at length scales where the model doesn't even apply.
+No change to the text.
+
 \item \textcolor{blue}{Section 2.2.2: there is some imprecision here in equation (13) - you have not defined anywhere that $\Gamma$
 is the boundary, and which boundary you are referring to. One can figure it out, but it is not precise.
 $\Omega$ is not defined either though one will assume invariably that this is an open bounded domain in 2D
@@ -200,6 +205,8 @@ something that the authors are thinking to add to their model/code?}
 Implementing this idea will require some new developments to Firedrake, namely first-class support for subdomains, defining different PDEs on different subdomains, and defining matching conditions for the solutions at the interfaces between subdomains.
 The Firedrake developers are working on this feature right now as it's very much in demand.
 We are very much interested in, for example, using SIA in the interior of the ice sheet and SSA in the ice streams and margins, as this would give a much less computationally-intensive way to do some form of whole-ice sheet modeling than using, say, the first order model.
+No change to the text.
+
 \item \textcolor{blue}{Section 2.4: This section is very incomplete. You need to give the enthalpy equation and given the
 Glen's law expression as well, since it is mentioned.}
 
@@ -224,6 +231,8 @@ This is a weak point at present and we plan to improve this in future versions.
 Structured/unstructured? Hex/tet (quad/tri)?}
 
 We use unstructured triangular meshes although Firedrake in principle can use unstructured quad meshes.
+We've added the word ``unstructured'' to clarify this.
+
 \item \textcolor{blue}{Section 3: It is not clear from the description what the inverse problem you are describing is for.
 Is it to obtain parameters in the model like the basal friction using observational data of e.g. surface velocity? There really needs to be more discussion here, and I personally would like to see
 a mathematical statement of a representative inverse problem you are solving. It would be worth
@@ -285,6 +294,8 @@ for land-ice solvers that do not use extruded geometries, e.g. Tezaur et al.}
 We have restricted our implementation to use only extruded geometries.
 Having made this choice, we might not ever be able to solve really geometrically complex problems like what the Elmer/Ice crowd did with the drainage of the lake underneath T\^ete Rousse glacier.
 But the simplifications that this results in for the vast majority of glaciological applications are so advantageous that it's a sacrifice we're willing to accept.
+No change to the text.
+
 \item \textcolor{blue}{Section 4.5.2: I think this section needs to be made earlier, and other BCs need to be added to that
 discussion.}
 
@@ -299,11 +310,12 @@ emerging HPC architectures, e.g., GPUs?}
 Firedrake relies on the package loo.py for code generation, which can target C and OpenCL.
 There is ongoing work with the developers of loo.py to target GPUs and other accelerators by generating OpenCL instead.
 Firedrake is built on PETSc and thus can run on parallel machines.
-See Rathgeber et al. 2016 for performance and scaling benchmarks; Firedrake has been run on problems with millions of degrees of freedom on supercomputers, for example the UK national supercomputer ARCHER.
+See again Rathgeber et al. 2016 for performance and scaling benchmarks; Firedrake has been run on problems with millions of degrees of freedom on supercomputers, for example the UK national supercomputer ARCHER.
+No change to the text.
 
 \item \textcolor{blue}{Section 4.6: Can you please clarify what you mean by the following statement? ``Large problems,
 such as continental-scale modeling, will require more sophisticated and possibly problem-specific
-approaches''. I’m wondering in particular about the problem-specific approach part. There are
+approaches''. I'm wondering in particular about the problem-specific approach part. There are
 models like first order Stokes that can be used at the continental scale and they are not really
 problem specific.}
 
@@ -319,6 +331,7 @@ These optimizations will be the subject of future work.''
 Since we use a modal basis in the vertical to discretize solutions of the 3D model, we can devise a p-type multigrid scheme along this axis.
 This is an example of using problem-specific knowledge to choose a solution strategy.
 Just using LU or throwing a black-box algebraic multigrid preconditioner at it would be failing to use this special structure.
+That said, we did not want to speculate too much on approaches that we haven't implemented yet.
 
 \item \textcolor{blue}{p. 20: I don't understand why you need to create an analytical expression of (32) using special
 functions. Is this something specific to your framework, which requires expressions in a certain form
@@ -330,6 +343,7 @@ A package that also made the choice to use action principles but which was built
 We are hampered by the fact UFL does not include support for hypergeometric functions.
 If we were instead writing everything from scratch in C++, we could call into Boost or GSL to evaluate hypergeometric functions.
 We believe that the benefits outweight the costs but this is a definite drawback of our approach.
+No change to the text.
 
 \item \textcolor{blue}{It's great that you have executable documentation in something easy-to-use such as Jupyter notebooks! (no need to address this comment)}
 \item \textcolor{blue}{p. 29: are you considering putting in the first-order Stokes/Blatter Pattyn model into your code
@@ -338,10 +352,17 @@ framework?}
 The thing that we mistakenly called the ``hybrid'' model is really the first order / Blatter-Pattyn model.
 We have rewritten some of the text to try and make this clearer.
 
-\item \textcolor{blue}{The methods do not discuss their code development/testing stance on icepack. How do users con-
-tribute to the code - through pull requests? Is there regression/performance testing? Continuous
+\item \textcolor{blue}{The methods do not discuss their code development/testing stance on icepack. How do users contribute to the code - through pull requests? Is there regression/performance testing? Continuous
 integration testing? These are all really important, especially if you have non-experts contributing
 to the code!}
+
+This information is on the icepack website (https://icepack.github.io/developers).
+Users contribute through pull requests which are automatically checked against a regression testing suite.
+We try to keep the test coverage at 95\% or higher.
+There is at present no automated performance testing short of looking at the timings from our CI service.
+Our development practices have changed appreciably even during the process of writing this manuscript; several of the contributors are students who are learning more about version control in tandem with learning to implement new or modify existing models.
+We have added references in the code and data availability section about where to find this information.
+
 \end{enumerate}
 
 \section*{Minor comments}
