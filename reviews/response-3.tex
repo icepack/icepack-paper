@@ -54,6 +54,9 @@
 
 \maketitle
 
+Thank you for this thorough review!
+Original comments are in blue, our responses are in black, and hyperlinks in magenta.
+
 \section*{Summary}
 
 \textcolor{blue}{Icepack is an important new model, and a description paper is appropriate.  Four features of Icepack stand out: its use of Firedrake/Python, the flexible action-principle design of its stress-balance solver module, its from-the-start attention to data assimilation and inverse modeling, and its design as a modeling environment and language instead of a ready-to-run model.  All of these choices are addressed appropriately in this manuscript.  Readers are very likely to try the model, which fullfills a major purpose of a description paper at this early-ish development stage.}
@@ -95,6 +98,8 @@ Granted, (1) there is more demonstration work that we need to do in order to cov
 Very likely your recent work on variational inequalities will factor into improvement on the second front.
 
 We have altered the text to state more clearly that our goal is to help users who are not experts in scientific computing.
+We added the following to the introduction: ``We have focused efforts thus far on process studies of individual glaciers or drainage basins (use cases 2 and 3 of the list above).
+Development of icepack is ongoing and we will broaden our efforts to encompass more use cases in future.''
 We also added the following sentence to the conclusion: ``Exactly how to apply principles from HCI to maximize usability is, nonetheless, not an exact science.
 Our implementation may have failed to meet this goal and changes in future versions will be guided by what users find most difficult.''
 
@@ -319,7 +324,13 @@ No change to the text.
 
 \textcolor{blue}{523, A:  This honest, clear sentence is not at all expected by the reader who remembers lines 15-19 in the Introduction.  Please let the reader know earlier.}
 
+We added the following to the introduction: ``We have focused efforts thus far on process studies of individual glaciers or drainage basins (use cases 2 and 3 of the list above).
+Development of icepack is ongoing and we will broaden our efforts to encompass more use cases in future.''
+
 \textcolor{blue}{533--586:  The MISMIP+ experiment is part of the 2008-onward tradition of running ice sheet models in rectangular boxes (MISMIP, EISMINT-HOM, ...).  This is fine in a field where one also has some laboratory fluid models, i.e. actual stuff, which fit in boxes.  But this tradition has a distressing impact on new model development, which is to modularize around the choices one makes between intercomparison-specified boxes and their associated boundary conditions.  (Yes, that is what Icepack looks like right now.)}
+
+We included this assuming that it's a necessity to repeat at least some of the standard benchmarks from the literature in order to publish a new model.
+No change to the text.
 
 \textcolor{blue}{588--597, A:  This example would be more impressive with hybrid physics, right?, but Icepack is not there yet.  (Or else it would have been applied here.)  Readers of GMD should be taken to be serious people.  Tell them the score, and I don't mean relative to what other models are capable of.  What needs to improve?}
 
@@ -355,7 +366,7 @@ See for example Turk (2013), Scaling a code in the human dimension or Bangerth a
 \textcolor{blue}{693--713, C:  This basic point about abstraction gradient is good.  But solver/discretization components/choices is not the only such gradient.  From talking to a lot of novice glacier modelers, I assert the key abstraction gradient, which an ice sheet model must finesse, regards ice flow physics.  (What aspects of the full, coupled, nonlinear dynamics are the next ones that the user's constructed Icepack model should/can handle for the science goal?  How to build-in that physics without unnecessary parameters?  How to generate intermediate results which reveal which processes are missing, re the science goal?)  Thinking on this stuff is where Icepack developers could make their next real progress.  That means de-emphasizing solver components/discretizations in the user's view, primarily by setting aggressive defaults, even as the developers must get solvers right (which is the strength of Icepack).}
 
 It's possible that icepack will evolve to have a more end-to-end simulation driver as the main interface.
-No change to the text.
+See changes to intro and conclusion.
 
 \textcolor{blue}{721:  "phyics"}
 
