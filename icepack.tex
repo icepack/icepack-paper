@@ -179,7 +179,7 @@ The diagnostic equation prescribes the ice velocity through a time-independent, 
 The prognostic equation prescribes how the ice thickness evolves through conservation of mass.
 Mathematically, these two coupled PDEs can be thought of as a differential-algebraic equation; see \citet{ascher1998computer}.
 
-The evolution equations for ice thickness and velocity are necessary for any simulation, both other fields with their own dynamics can be a part of the problem as well.
+The evolution equations for ice thickness and velocity are necessary for any simulation, but other fields with their own dynamics can be a part of the problem as well.
 For example, the rheology and friction are the main coefficients in the diagnostic equation.
 These coefficients are functions of other fields that have their own evolution equations.
 The rheology is a function of temperature, englacial water content, and damage from crevassing.
@@ -262,11 +262,10 @@ Second, we impose outflow boundary conditions on any part of the domain where th
 Which segments of the boundary are inflow or outflow are diagnosed automatically by calculating the sign of the dot product between the velocity and the unit outward normal vector.
 
 The mass transport equation for ice thickness is a free boundary problem, where the free boundary is the contour between ice-covered and ice-free regions \citep{schoof2013ice}.
-A naively-implemented prognostic solver could erroneously compute negative thickness values in subsequent timesteps when there is ablation in ice-free regions.
-A common and ad-hoc approach to work around this issue is to truncate the thickness at zero at every timestep.
-The principled approach is to instead treat the free boundary problem directly as a variational inequality \citep{jouvet2012steady}.
-Icepack currently lacks a principled scheme for tracking this free boundary and we instead rely on truncation.
-Treating this problem as a variational inequality in icepack will be the subject of future development.
+Where there is ablation in ice-free regions, a correctly-implemented prognostic solver will compute a negative thickness, which is unphysical and requires correction.
+The prognostic solver in icepack truncates the thickness to zero, which approximates the free boundary, where there is ablation in ice-free regions.
+An implicit approach would instead treat the free boundary problem directly as a variational inequality \citep{jouvet2012steady}.
+Icepack currently lacks such a scheme and this will be the subject of future development.
 PETSc includes scalable solvers for variational inequalities \citep{bueler2020petsc} that are also available through Firedrake.
 
 
